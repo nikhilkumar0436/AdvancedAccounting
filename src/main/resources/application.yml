@@ -1,0 +1,117 @@
+spring:
+  application:
+    name: advancedaccounting
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/advancedaccounting
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+    # Fallback configuration for development
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 20000
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+
+  jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        generate_statistics: false
+        jdbc:
+          time_zone: UTC
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+
+  # Liquibase Configuration
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+    default-schema: public
+
+  sql:
+    init:
+      mode: never
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+    default-property-inclusion: non_null
+
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+# OpenAPI Documentation
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    disable-swagger-default-url: true
+    display-request-duration: true
+    doc-expansion: none
+  show-actuator: false
+  paths-to-match: /**
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Logging Configuration
+logging:
+  level:
+    com.easy: INFO
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/advancedaccounting.log
+
+# Custom Application Properties
+app:
+  name: Advanced Accounting System
+  version: 1.0.0
+  description: "Comprehensive accounting and invoice management system"
+
+#  # Security settings (for future implementation)
+#  security:
+#    jwt:
+#      secret: your-secret-key-here
+#      expiration: 86400000 # 24 hours in milliseconds
+
+  # Invoice settings
+  invoice:
+    default-currency: INR
+    auto-generate-invoice-number: true
+    invoice-number-prefix: "INV-"
+
+  # GST settings
+  gst:
+    default-rate: 5.0
+    include-in-price: true

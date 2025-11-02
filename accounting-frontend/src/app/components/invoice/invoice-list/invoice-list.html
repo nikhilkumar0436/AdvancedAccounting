@@ -1,0 +1,251 @@
+<div class="invoice-list-container">
+  <div class="header">
+    <h2>Invoice Management</h2>
+    <div class="header-actions">
+      <button class="btn btn-success" (click)="exportToCSV()">
+        <i class="fa fa-download"></i> Export CSV
+      </button>
+      <button class="btn btn-danger" (click)="exportToPDF()">
+        <i class="fa fa-file-pdf"></i> Export PDF
+      </button>
+      <button class="btn btn-primary" routerLink="/invoices/new">
+        <i class="fa fa-plus"></i> New Invoice
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="statistics-section" *ngIf="selectedCompanyId">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="stat-card">
+          <h5>Total Invoices</h5>
+          <h3>{{ statistics.count }}</h3>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stat-card">
+          <h5>Total Amount</h5>
+          <h3>₹{{ statistics.totalAmount | number:'1.2-2' }}</h3>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stat-card">
+          <h5>Outstanding</h5>
+          <h3>₹{{ statistics.outstandingAmount | number:'1.2-2' }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="row">
+      <div class="col-md-2">
+        <label for="filterCustomerId">Customer:</label>
+        <select id="filterCustomerId" class="form-control" [(ngModel)]="filterCustomerId">
+          <option value="">All Customers</option>
+          <option *ngFor="let customer of customers" [value]="customer.id">
+            {{ customer.customerName }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="filterInvoiceType">Type:</label>
+        <select id="filterInvoiceType" class="form-control" [(ngModel)]="filterInvoiceType">
+          <option value="">All Types</option>
+          <option *ngFor="let type of invoiceTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="filterStartDate">Start Date:</label>
+        <input type="date" id="filterStartDate" class="form-control" [(ngModel)]="filterStartDate">
+      </div>
+      <div class="col-md-2">
+        <label for="filterEndDate">End Date:</label>
+        <input type="date" id="filterEndDate" class="form-control" [(ngModel)]="filterEndDate">
+      </div>
+      <div class="col-md-2">
+        <label for="filterPaymentType">Payment:</label>
+        <select id="filterPaymentType" class="form-control" [(ngModel)]="filterPaymentType">
+          <option value="">All Payments</option>
+          <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label>&nbsp;</label>
+        <div class="btn-group">
+          <button class="btn btn-success btn-sm" (click)="onSearch()">
+            <i class="fa fa-search"></i> Search
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="onClearFilters()">
+            <i class="fa fa-times"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Size Selection -->
+  <div class="page-size-section">
+    <label for="pageSize">Show:</label>
+    <select id="pageSize" class="form-control" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+      <option value="10">10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+    <span>entries per page</span>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Invoices Table -->
+  <div *ngIf="!loading" class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead class="thead-dark">
+        <tr>
+          <th (click)="onSort('invoiceNumber')" class="sortable">
+            Invoice #
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'invoiceNumber',
+              'fa-sort-up': sortBy === 'invoiceNumber' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'invoiceNumber' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th (click)="onSort('invoiceDate')" class="sortable">
+            Date
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'invoiceDate',
+              'fa-sort-up': sortBy === 'invoiceDate' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'invoiceDate' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th>Customer</th>
+          <th>Type</th>
+          <th>Payment</th>
+          <th (click)="onSort('grandTotal')" class="sortable">
+            Amount
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'grandTotal',
+              'fa-sort-up': sortBy === 'grandTotal' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'grandTotal' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th>Due Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let invoice of invoices">
+          <td>
+            <strong>{{ invoice.invoiceNumber }}</strong>
+            <div class="small text-muted">{{ invoice.financialYear }}</div>
+          </td>
+          <td>{{ invoice.invoiceDate | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div>{{ invoice.customerInfo.customerName }}</div>
+            <div class="small text-muted" *ngIf="invoice.customerInfo.gstin">
+              GSTIN: {{ invoice.customerInfo.gstin }}
+            </div>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getInvoiceTypeClass(invoice.invoiceType)">
+              {{ invoice.invoiceType }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getPaymentTypeClass(invoice.paymentType)">
+              {{ invoice.paymentType }}
+            </span>
+          </td>
+          <td>
+            <strong>₹{{ invoice.grandTotal | number:'1.2-2' }}</strong>
+            <div class="small text-muted">
+              Taxable: ₹{{ invoice.totalTaxableAmount | number:'1.2-2' }}
+            </div>
+          </td>
+          <td>
+            <div *ngIf="invoice.dueDate">{{ invoice.dueDate | date:'dd/MM/yyyy' }}</div>
+            <div *ngIf="!invoice.dueDate" class="text-muted">-</div>
+          </td>
+          <td>
+            <div class="btn-group" role="group">
+              <button class="btn btn-sm btn-info" [routerLink]="['/invoices', invoice.id]" title="View">
+                <i class="fa fa-eye"></i>
+              </button>
+              <button class="btn btn-sm btn-primary" [routerLink]="['/invoices', invoice.id, 'edit']" title="Edit">
+                <i class="fa fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-success" (click)="approveInvoice(invoice)" title="Approve">
+                <i class="fa fa-check"></i>
+              </button>
+              <button class="btn btn-sm btn-warning" (click)="rejectInvoice(invoice)" title="Reject">
+                <i class="fa fa-times"></i>
+              </button>
+              <button class="btn btn-sm btn-secondary" (click)="cancelInvoice(invoice)" title="Cancel">
+                <i class="fa fa-ban"></i>
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="deleteInvoice(invoice)" title="Delete">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- No Data Message -->
+    <div *ngIf="invoices.length === 0" class="text-center py-4">
+      <p class="text-muted">No invoices found matching the current filters.</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalPages > 1" class="pagination-section">
+    <nav aria-label="Invoice pagination">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 0">
+          <button class="page-link" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+            First
+          </button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 0">
+          <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+            Previous
+          </button>
+        </li>
+
+        <li *ngFor="let page of getPages()"
+            class="page-item"
+            [class.active]="page === currentPage">
+          <button class="page-link" (click)="onPageChange(page)">
+            {{ page + 1 }}
+          </button>
+        </li>
+
+        <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+          <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
+            Next
+          </button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+          <button class="page-link" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+            Last
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="pagination-info text-center">
+      Showing {{ (currentPage * pageSize) + 1 }} to {{ getMaxShownItems() }}
+      of {{ totalElements }} entries
+    </div>
+  </div>
+</div>
+

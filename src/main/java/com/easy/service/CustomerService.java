@@ -6,6 +6,7 @@ import com.easy.dto.CustomerResponse;
 import com.easy.entity.Customer;
 import com.easy.entity.CompanyMaster;
 import com.easy.repository.CustomerRepository;
+import com.easy.repository.CompanyRepository;
 import com.easy.request.customer.CustomRequest;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
@@ -32,8 +33,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
-    // TODO: Add CompanyRepository when available
-    // private final CompanyRepository companyRepository;
+    private final CompanyRepository companyRepository;
 
     public Page<Customer> getCustomersWithFilters(CustomRequest request) {
 
@@ -87,10 +87,12 @@ public class CustomerService {
 
         Customer customer = customerMapper.toEntity(request);
 
-        // TODO: Set company entity based on companyId
-        // CompanyMaster company = companyRepository.findById(request.getCompanyId())
-        //     .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + request.getCompanyId()));
-        // customer.setCompany(company);
+        // Set company entity based on companyId
+        if (request.getCompanyId() != null) {
+            CompanyMaster company = companyRepository.findById(request.getCompanyId())
+                .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + request.getCompanyId()));
+            customer.setCompany(company);
+        }
 
         Customer savedCustomer = customerRepository.save(customer);
         log.info("Customer created successfully with ID: {}", savedCustomer.getId());
@@ -126,12 +128,13 @@ public class CustomerService {
 
         customerMapper.updateEntity(request, existingCustomer);
 
-        // TODO: Update company if companyId changed
-        // if (!request.getCompanyId().equals(existingCustomer.getCompany().getId())) {
-        //     CompanyMaster company = companyRepository.findById(request.getCompanyId())
-        //         .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + request.getCompanyId()));
-        //     existingCustomer.setCompany(company);
-        // }
+        // Update company if companyId changed
+        if (request.getCompanyId() != null &&
+            (existingCustomer.getCompany() == null || !request.getCompanyId().equals(existingCustomer.getCompany().getId()))) {
+            CompanyMaster company = companyRepository.findById(request.getCompanyId())
+                .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + request.getCompanyId()));
+            existingCustomer.setCompany(company);
+        }
 
         Customer updatedCustomer = customerRepository.save(existingCustomer);
         log.info("Customer updated successfully with ID: {}", updatedCustomer.getId());

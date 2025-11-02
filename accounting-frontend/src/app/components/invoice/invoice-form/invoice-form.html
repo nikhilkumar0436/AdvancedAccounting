@@ -1,0 +1,355 @@
+<div class="invoice-form-container">
+  <div class="header">
+    <h2>{{ isEditMode ? 'Edit Invoice' : 'Create New Invoice' }}</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/invoices">Invoices</a></li>
+        <li class="breadcrumb-item active">{{ isEditMode ? 'Edit' : 'New' }}</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Invoice Form -->
+  <form *ngIf="!loading" [formGroup]="invoiceForm" (ngSubmit)="onSubmit()" class="invoice-form">
+
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <h4 class="section-title">Invoice Information</h4>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="invoiceNumber" class="required">Invoice Number:</label>
+            <input
+              type="text"
+              id="invoiceNumber"
+              class="form-control"
+              formControlName="invoiceNumber"
+              [class.is-invalid]="isFieldInvalid('invoiceNumber')"
+              placeholder="INV-001"
+            />
+            <div *ngIf="isFieldInvalid('invoiceNumber')" class="invalid-feedback">
+              {{ getFieldError('invoiceNumber') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="invoiceDate" class="required">Invoice Date:</label>
+            <input
+              type="date"
+              id="invoiceDate"
+              class="form-control"
+              formControlName="invoiceDate"
+              [class.is-invalid]="isFieldInvalid('invoiceDate')"
+            />
+            <div *ngIf="isFieldInvalid('invoiceDate')" class="invalid-feedback">
+              {{ getFieldError('invoiceDate') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="dueDate">Due Date:</label>
+            <input
+              type="date"
+              id="dueDate"
+              class="form-control"
+              formControlName="dueDate"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="invoiceType" class="required">Invoice Type:</label>
+            <select
+              id="invoiceType"
+              class="form-control"
+              formControlName="invoiceType"
+              [class.is-invalid]="isFieldInvalid('invoiceType')"
+            >
+              <option *ngFor="let type of invoiceTypes" [value]="type">{{ type }}</option>
+            </select>
+            <div *ngIf="isFieldInvalid('invoiceType')" class="invalid-feedback">
+              {{ getFieldError('invoiceType') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="paymentType" class="required">Payment Type:</label>
+            <select
+              id="paymentType"
+              class="form-control"
+              formControlName="paymentType"
+              [class.is-invalid]="isFieldInvalid('paymentType')"
+            >
+              <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
+            </select>
+            <div *ngIf="isFieldInvalid('paymentType')" class="invalid-feedback">
+              {{ getFieldError('paymentType') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="financialYear" class="required">Financial Year:</label>
+            <input
+              type="text"
+              id="financialYear"
+              class="form-control"
+              formControlName="financialYear"
+              [class.is-invalid]="isFieldInvalid('financialYear')"
+              placeholder="2024-2025"
+            />
+            <div *ngIf="isFieldInvalid('financialYear')" class="invalid-feedback">
+              {{ getFieldError('financialYear') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="customerId" class="required">Customer:</label>
+            <select
+              id="customerId"
+              class="form-control"
+              formControlName="customerId"
+              [class.is-invalid]="isFieldInvalid('customerId')"
+            >
+              <option value="">Select Customer</option>
+              <option *ngFor="let customer of customers" [value]="customer.id">
+                {{ customer.customerName }}
+              </option>
+            </select>
+            <div *ngIf="isFieldInvalid('customerId')" class="invalid-feedback">
+              {{ getFieldError('customerId') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Place of Supply Section -->
+    <div class="form-section">
+      <h4 class="section-title">Place of Supply</h4>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="placeOfSupply" class="required">Place of Supply:</label>
+            <input
+              type="text"
+              id="placeOfSupply"
+              class="form-control"
+              formControlName="placeOfSupply"
+              [class.is-invalid]="isFieldInvalid('placeOfSupply')"
+              placeholder="State Name"
+            />
+            <div *ngIf="isFieldInvalid('placeOfSupply')" class="invalid-feedback">
+              {{ getFieldError('placeOfSupply') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="placeOfSupplyStateCode" class="required">State Code:</label>
+            <input
+              type="text"
+              id="placeOfSupplyStateCode"
+              class="form-control"
+              formControlName="placeOfSupplyStateCode"
+              [class.is-invalid]="isFieldInvalid('placeOfSupplyStateCode')"
+              placeholder="27"
+              maxlength="2"
+            />
+            <div *ngIf="isFieldInvalid('placeOfSupplyStateCode')" class="invalid-feedback">
+              {{ getFieldError('placeOfSupplyStateCode') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                id="isInterState"
+                class="form-check-input"
+                formControlName="isInterState"
+              />
+              <label for="isInterState" class="form-check-label">Inter-State Supply</label>
+            </div>
+
+            <div class="form-check">
+              <input
+                type="checkbox"
+                id="reverseChargeApplicable"
+                class="form-check-input"
+                formControlName="reverseChargeApplicable"
+              />
+              <label for="reverseChargeApplicable" class="form-check-label">Reverse Charge Applicable</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Items Section -->
+    <div class="form-section">
+      <h4 class="section-title">
+        Invoice Items
+        <button type="button" class="btn btn-sm btn-success ml-2" (click)="addInvoiceItem()">
+          <i class="fa fa-plus"></i> Add Item
+        </button>
+      </h4>
+
+      <div formArrayName="invoiceItems">
+        <div *ngFor="let item of invoiceItemsArray.controls; let i = index"
+             [formGroupName]="i"
+             class="invoice-item">
+          <div class="item-header">
+            <h6>Item {{ i + 1 }}</h6>
+            <button type="button" class="btn btn-sm btn-danger" (click)="removeInvoiceItem(i)">
+              <i class="fa fa-trash"></i> Remove
+            </button>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Description:</label>
+                <input type="text" class="form-control" formControlName="description" />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Quantity:</label>
+                <input type="number" class="form-control" formControlName="quantity"
+                       (blur)="calculateItemAmount(i)" />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Rate:</label>
+                <input type="number" class="form-control" formControlName="rate"
+                       (blur)="calculateItemAmount(i)" />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>CGST %:</label>
+                <input type="number" class="form-control" formControlName="cgstRate"
+                       (blur)="calculateTaxes(i)" />
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>SGST %:</label>
+                <input type="number" class="form-control" formControlName="sgstRate"
+                       (blur)="calculateTaxes(i)" />
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>IGST %:</label>
+                <input type="number" class="form-control" formControlName="igstRate"
+                       (blur)="calculateTaxes(i)" />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Taxable Amount:</label>
+                <input type="number" class="form-control" formControlName="taxableAmount" readonly />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Total Amount:</label>
+                <input type="number" class="form-control" formControlName="totalAmount" readonly />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="invoiceItemsArray.length === 0" class="text-center py-4">
+          <p class="text-muted">No items added. Click "Add Item" to start.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes Section -->
+    <div class="form-section">
+      <h4 class="section-title">Additional Information</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="notes">Notes:</label>
+            <textarea
+              id="notes"
+              class="form-control"
+              formControlName="notes"
+              rows="3"
+              placeholder="Any additional notes..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="termsAndConditions">Terms and Conditions:</label>
+            <textarea
+              id="termsAndConditions"
+              class="form-control"
+              formControlName="termsAndConditions"
+              rows="3"
+              placeholder="Terms and conditions..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="submitting || invoiceForm.invalid">
+        <span *ngIf="submitting" class="spinner-border spinner-border-sm mr-2"></span>
+        {{ isEditMode ? 'Update Invoice' : 'Create Invoice' }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-secondary ml-2"
+        (click)="onCancel()"
+        [disabled]="submitting">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+

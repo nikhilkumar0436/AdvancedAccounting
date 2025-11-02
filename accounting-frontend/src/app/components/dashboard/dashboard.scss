@@ -1,0 +1,146 @@
+.dashboard-container {
+  padding: 30px;
+
+  .welcome-section {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .lead {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+  }
+
+  .quick-actions {
+    margin-bottom: 40px;
+
+    h3 {
+      color: #333;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+
+    .action-card {
+      background: white;
+      padding: 30px 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      height: 100%;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .card-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        color: #667eea;
+      }
+
+      h5 {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      p {
+        color: #666;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+      }
+
+      .btn {
+        padding: 10px 25px;
+        font-weight: 500;
+        border-radius: 25px;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: none;
+        }
+      }
+    }
+  }
+
+  .recent-activity {
+    h3 {
+      color: #333;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+
+    .activity-list {
+      background: white;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        i {
+          font-size: 1.2rem;
+          margin-right: 15px;
+          width: 20px;
+          text-align: center;
+        }
+
+        span {
+          color: #555;
+          font-size: 0.95rem;
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 15px;
+
+    .welcome-section {
+      padding: 30px 15px;
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .lead {
+        font-size: 1rem;
+      }
+    }
+
+    .quick-actions {
+      .action-card {
+        margin-bottom: 20px;
+        padding: 20px 15px;
+
+        .card-icon {
+          font-size: 2.5rem;
+        }
+      }
+    }
+  }
+}
+

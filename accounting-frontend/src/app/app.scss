@@ -1,0 +1,134 @@
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  .navbar {
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.25rem;
+
+      i {
+        margin-right: 8px;
+      }
+    }
+
+    .nav-link {
+      font-weight: 500;
+      transition: all 0.3s ease;
+
+      i {
+        margin-right: 6px;
+      }
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
+
+      &.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+    }
+
+    .dropdown-menu {
+      border: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+      .dropdown-item {
+        i {
+          margin-right: 8px;
+          width: 16px;
+          text-align: center;
+        }
+
+        &:hover {
+          background-color: #f8f9fa;
+        }
+      }
+    }
+  }
+
+  .main-content {
+    flex: 1;
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 120px);
+  }
+
+  .footer {
+    flex-shrink: 0;
+    padding: 15px 0;
+    font-size: 0.875rem;
+
+    .text-muted {
+      color: #6c757d !important;
+    }
+  }
+}
+
+// Global Bootstrap overrides
+.btn {
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+.form-control {
+  border-radius: 4px;
+
+  &:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+.table {
+  .thead-dark th {
+    background-color: #343a40;
+    border-color: #454d55;
+  }
+}
+
+// Responsive navigation
+@media (max-width: 991.98px) {
+  .app-container .navbar {
+    .navbar-collapse {
+      margin-top: 10px;
+
+      .navbar-nav {
+        margin-bottom: 10px;
+      }
+    }
+  }
+}
+
+@media (max-width: 767.98px) {
+  .app-container {
+    .main-content {
+      min-height: calc(100vh - 140px);
+    }
+
+    .footer {
+      .row {
+        text-align: center;
+
+        .col-md-6 {
+          margin-bottom: 5px;
+
+          &.text-end {
+            text-align: center !important;
+          }
+        }
+      }
+    }
+  }
+}
+

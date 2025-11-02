@@ -1,0 +1,331 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
+import { InvoiceService } from '../../../services/invoice.service';
+import { CustomerService } from '../../../services/customer.service';
+import {
+  InvoiceRequest,
+  InvoiceResponse,
+  InvoiceType,
+  PaymentType,
+  InvoiceItemRequest
+} from '../../../models/invoice.model';
+import { CustomerResponse } from '../../../models/customer.model';
+
+@Component({
+  selector: 'app-invoice-form',
+  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  templateUrl: './invoice-form.html',
+  styleUrl: './invoice-form.scss',
+})
+export class InvoiceFormComponent implements OnInit {
+  invoiceForm: FormGroup;
+  isEditMode: boolean = false;
+  invoiceId: string | null = null;
+  loading: boolean = false;
+  submitting: boolean = false;
+  customers: CustomerResponse[] = [];
+
+  // Enums for template
+  invoiceTypes = Object.values(InvoiceType);
+  paymentTypes = Object.values(PaymentType);
+
+  constructor(
+    private fb: FormBuilder,
+    private invoiceService: InvoiceService,
+    private customerService: CustomerService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
+    this.invoiceForm = this.createForm();
+  }
+
+  ngOnInit(): void {
+    this.invoiceId = this.route.snapshot.paramMap.get('id');
+    this.isEditMode = !!this.invoiceId;
+
+    this.loadCustomers();
+
+    if (this.isEditMode && this.invoiceId) {
+      this.loadInvoice(this.invoiceId);
+    }
+  }
+
+  createForm(): FormGroup {
+    return this.fb.group({
+      customerId: ['', Validators.required],
+      invoiceNumber: ['', [Validators.required, Validators.maxLength(50)]],
+      invoiceDate: ['', Validators.required],
+      invoiceType: [InvoiceType.TAX_INVOICE, Validators.required],
+      financialYear: ['', [Validators.required, Validators.minLength(9), Validators.maxLength(9)]],
+      placeOfSupply: ['', [Validators.required, Validators.maxLength(50)]],
+      placeOfSupplyStateCode: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(2)]],
+      isInterState: [false],
+      reverseChargeApplicable: [false],
+      paymentType: [PaymentType.CREDIT, Validators.required],
+      dueDate: [''],
+      notes: [''],
+      termsAndConditions: [''],
+      invoiceItems: this.fb.array([])
+    });
+  }
+
+  get invoiceItemsArray(): FormArray {
+    return this.invoiceForm.get('invoiceItems') as FormArray;
+  }
+
+  createInvoiceItemForm(): FormGroup {
+    return this.fb.group({
+      productId: ['', Validators.required],
+      description: ['', [Validators.required, Validators.maxLength(500)]],
+      hsnCode: [''],
+      quantity: [1, [Validators.required, Validators.min(0.01)]],
+      unit: ['Nos', Validators.required],
+      rate: [0, [Validators.required, Validators.min(0)]],
+      amount: [0],
+      discountPercentage: [0, [Validators.min(0), Validators.max(100)]],
+      discountAmount: [0],
+      taxableAmount: [0],
+      cgstRate: [0, [Validators.min(0), Validators.max(100)]],
+      cgstAmount: [0],
+      sgstRate: [0, [Validators.min(0), Validators.max(100)]],
+      sgstAmount: [0],
+      igstRate: [0, [Validators.min(0), Validators.max(100)]],
+      igstAmount: [0],
+      cessRate: [0, [Validators.min(0), Validators.max(100)]],
+      cessAmount: [0],
+      totalAmount: [0]
+    });
+  }
+
+  addInvoiceItem(): void {
+    this.invoiceItemsArray.push(this.createInvoiceItemForm());
+  }
+
+  removeInvoiceItem(index: number): void {
+    this.invoiceItemsArray.removeAt(index);
+    this.calculateTotals();
+  }
+
+  loadCustomers(): void {
+    this.customerService.getAllCustomers().subscribe({
+      next: (customers: any) => {
+        this.customers = customers;
+      },
+      error: (error: any) => {
+        console.error('Error loading customers:', error);
+      }
+    });
+  }
+
+  loadInvoice(id: string): void {
+    this.loading = true;
+    this.invoiceService.getInvoiceById(id).subscribe({
+      next: (invoice: any) => {
+        this.populateForm(invoice);
+        this.loading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading invoice:', error);
+        this.loading = false;
+        alert('Error loading invoice. Please try again.');
+      }
+    });
+  }
+
+  populateForm(invoice: InvoiceResponse): void {
+    this.invoiceForm.patchValue({
+      customerId: invoice.customerInfo.id,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceDate: invoice.invoiceDate,
+      invoiceType: invoice.invoiceType,
+      financialYear: invoice.financialYear,
+      placeOfSupply: invoice.placeOfSupply,
+      placeOfSupplyStateCode: invoice.placeOfSupplyStateCode,
+      isInterState: invoice.isInterState,
+      reverseChargeApplicable: invoice.reverseChargeApplicable,
+      paymentType: invoice.paymentType,
+      dueDate: invoice.dueDate,
+      notes: invoice.notes,
+      termsAndConditions: invoice.termsAndConditions
+    });
+
+    // Populate invoice items
+    this.invoiceItemsArray.clear();
+    invoice.invoiceItems.forEach(item => {
+      const itemForm = this.createInvoiceItemForm();
+      itemForm.patchValue({
+        productId: item.productInfo.id,
+        description: item.description,
+        hsnCode: item.hsnCode,
+        quantity: item.quantity,
+        unit: item.unit,
+        rate: item.rate,
+        amount: item.amount,
+        discountPercentage: item.discountPercentage,
+        discountAmount: item.discountAmount,
+        taxableAmount: item.taxableAmount,
+        cgstRate: item.cgstRate,
+        cgstAmount: item.cgstAmount,
+        sgstRate: item.sgstRate,
+        sgstAmount: item.sgstAmount,
+        igstRate: item.igstRate,
+        igstAmount: item.igstAmount,
+        cessRate: item.cessRate,
+        cessAmount: item.cessAmount,
+        totalAmount: item.totalAmount
+      });
+      this.invoiceItemsArray.push(itemForm);
+    });
+  }
+
+  calculateItemAmount(index: number): void {
+    const item = this.invoiceItemsArray.at(index);
+    const quantity = item.get('quantity')?.value || 0;
+    const rate = item.get('rate')?.value || 0;
+    const discountPercentage = item.get('discountPercentage')?.value || 0;
+
+    const amount = quantity * rate;
+    const discountAmount = (amount * discountPercentage) / 100;
+    const taxableAmount = amount - discountAmount;
+
+    item.patchValue({
+      amount: amount,
+      discountAmount: discountAmount,
+      taxableAmount: taxableAmount
+    });
+
+    this.calculateTaxes(index);
+  }
+
+  calculateTaxes(index: number): void {
+    const item = this.invoiceItemsArray.at(index);
+    const taxableAmount = item.get('taxableAmount')?.value || 0;
+    const isInterState = this.invoiceForm.get('isInterState')?.value || false;
+
+    if (isInterState) {
+      const igstRate = item.get('igstRate')?.value || 0;
+      const igstAmount = (taxableAmount * igstRate) / 100;
+      item.patchValue({
+        igstAmount: igstAmount,
+        cgstAmount: 0,
+        sgstAmount: 0
+      });
+    } else {
+      const cgstRate = item.get('cgstRate')?.value || 0;
+      const sgstRate = item.get('sgstRate')?.value || 0;
+      const cgstAmount = (taxableAmount * cgstRate) / 100;
+      const sgstAmount = (taxableAmount * sgstRate) / 100;
+      item.patchValue({
+        cgstAmount: cgstAmount,
+        sgstAmount: sgstAmount,
+        igstAmount: 0
+      });
+    }
+
+    const cessRate = item.get('cessRate')?.value || 0;
+    const cessAmount = (taxableAmount * cessRate) / 100;
+    item.patchValue({ cessAmount: cessAmount });
+
+    const totalAmount = taxableAmount +
+      (item.get('cgstAmount')?.value || 0) +
+      (item.get('sgstAmount')?.value || 0) +
+      (item.get('igstAmount')?.value || 0) +
+      cessAmount;
+
+    item.patchValue({ totalAmount: totalAmount });
+
+    this.calculateTotals();
+  }
+
+  calculateTotals(): void {
+    // Calculate invoice totals based on items
+    // This is a simplified version - you might want to add more detailed calculations
+  }
+
+  onSubmit(): void {
+    if (this.invoiceForm.invalid) {
+      this.markFormGroupTouched(this.invoiceForm);
+      return;
+    }
+
+    this.submitting = true;
+    const formValue = this.invoiceForm.value;
+
+    // Calculate totals before submitting
+    this.calculateTotals();
+
+    const request: InvoiceRequest = {
+      ...formValue,
+      totalTaxableAmount: this.calculateTotalTaxableAmount(),
+      totalAmount: this.calculateTotalAmount(),
+      grandTotal: this.calculateGrandTotal()
+    };
+
+    const operation = this.isEditMode && this.invoiceId
+      ? this.invoiceService.updateInvoice(this.invoiceId, request)
+      : this.invoiceService.createInvoice(request);
+
+    operation.subscribe({
+      next: (response: any) => {
+        this.submitting = false;
+        alert(`Invoice ${this.isEditMode ? 'updated' : 'created'} successfully!`);
+        this.router.navigate(['/invoices']);
+      },
+      error: (error: any) => {
+        console.error('Error saving invoice:', error);
+        this.submitting = false;
+        alert(`Error ${this.isEditMode ? 'updating' : 'creating'} invoice. Please try again.`);
+      }
+    });
+  }
+
+  onCancel(): void {
+    this.router.navigate(['/invoices']);
+  }
+
+  private calculateTotalTaxableAmount(): number {
+    return this.invoiceItemsArray.controls.reduce((total, item) => {
+      return total + (item.get('taxableAmount')?.value || 0);
+    }, 0);
+  }
+
+  private calculateTotalAmount(): number {
+    return this.invoiceItemsArray.controls.reduce((total, item) => {
+      return total + (item.get('totalAmount')?.value || 0);
+    }, 0);
+  }
+
+  private calculateGrandTotal(): number {
+    return this.calculateTotalAmount();
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+
+  getFieldError(fieldName: string): string {
+    const control = this.invoiceForm.get(fieldName);
+    if (control && control.errors && control.touched) {
+      if (control.errors['required']) return `${fieldName} is required`;
+      if (control.errors['maxlength']) return `${fieldName} is too long`;
+      if (control.errors['minlength']) return `${fieldName} is too short`;
+      if (control.errors['min']) return `${fieldName} cannot be negative`;
+      if (control.errors['max']) return `${fieldName} is too large`;
+    }
+    return '';
+  }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const control = this.invoiceForm.get(fieldName);
+    return !!(control && control.errors && control.touched);
+  }
+}

@@ -1,0 +1,257 @@
+<div class="customer-list-container">
+  <div class="header">
+    <h2>Customer Management</h2>
+    <button class="btn btn-primary" routerLink="/customers/new">
+      <i class="fa fa-plus"></i> Add New Customer
+    </button>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="row">
+      <div class="col-md-3">
+        <label for="searchTerm">Search by Name:</label>
+        <input
+          type="text"
+          id="searchTerm"
+          class="form-control"
+          [(ngModel)]="searchTerm"
+          placeholder="Enter customer name..."
+          (keyup.enter)="onSearch()"
+        />
+      </div>
+      <div class="col-md-2">
+        <label for="filterCity">City:</label>
+        <input
+          type="text"
+          id="filterCity"
+          class="form-control"
+          [(ngModel)]="filterCity"
+          placeholder="City"
+        />
+      </div>
+      <div class="col-md-2">
+        <label for="filterState">State:</label>
+        <input
+          type="text"
+          id="filterState"
+          class="form-control"
+          [(ngModel)]="filterState"
+          placeholder="State"
+        />
+      </div>
+      <div class="col-md-2">
+        <label for="filterCustomerType">Type:</label>
+        <select id="filterCustomerType" class="form-control" [(ngModel)]="filterCustomerType">
+          <option value="">All Types</option>
+          <option *ngFor="let type of customerTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="filterIsActive">Status:</label>
+        <select id="filterIsActive" class="form-control" [(ngModel)]="filterIsActive">
+          <option value="">All</option>
+          <option [value]="true">Active</option>
+          <option [value]="false">Inactive</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <label>&nbsp;</label>
+        <div class="btn-group">
+          <button class="btn btn-success btn-sm" (click)="onSearch()">
+            <i class="fa fa-search"></i> Search
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="onClearFilters()">
+            <i class="fa fa-times"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Size Selection -->
+  <div class="page-size-section">
+    <label for="pageSize">Show:</label>
+    <select id="pageSize" class="form-control" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+      <option value="10">10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+    <span>entries per page</span>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Customers Table -->
+  <div *ngIf="!loading" class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead class="thead-dark">
+        <tr>
+          <th (click)="onSort('customerName')" class="sortable">
+            Customer Name
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'customerName',
+              'fa-sort-up': sortBy === 'customerName' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'customerName' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th>GSTIN</th>
+          <th>PAN</th>
+          <th (click)="onSort('customerType')" class="sortable">
+            Type
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'customerType',
+              'fa-sort-up': sortBy === 'customerType' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'customerType' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th>Contact</th>
+          <th (click)="onSort('city')" class="sortable">
+            Location
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'city',
+              'fa-sort-up': sortBy === 'city' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'city' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th>Outstanding</th>
+          <th (click)="onSort('isActive')" class="sortable">
+            Status
+            <i class="fa" [ngClass]="{
+              'fa-sort': sortBy !== 'isActive',
+              'fa-sort-up': sortBy === 'isActive' && sortDirection === 'ASC',
+              'fa-sort-down': sortBy === 'isActive' && sortDirection === 'DESC'
+            }"></i>
+          </th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let customer of customers" [class.inactive]="!customer.isActive">
+          <td>
+            <strong>{{ customer.customerName }}</strong>
+          </td>
+          <td>{{ customer.gstin || 'N/A' }}</td>
+          <td>{{ customer.pan || 'N/A' }}</td>
+          <td>
+            <span class="badge" [ngClass]="{
+              'badge-primary': customer.customerType === 'REGISTERED',
+              'badge-secondary': customer.customerType === 'UNREGISTERED',
+              'badge-info': customer.customerType === 'COMPOSITION',
+              'badge-warning': customer.customerType === 'SEZ',
+              'badge-success': customer.customerType === 'EXEMPT'
+            }">
+              {{ customer.customerType }}
+            </span>
+          </td>
+          <td>
+            <div *ngIf="customer.phone">
+              <i class="fa fa-phone"></i> {{ customer.phone }}
+            </div>
+            <div *ngIf="customer.email">
+              <i class="fa fa-envelope"></i> {{ customer.email }}
+            </div>
+          </td>
+          <td>
+            <div>{{ customer.city }}, {{ customer.state }}</div>
+            <small class="text-muted">{{ customer.pincode }}</small>
+          </td>
+          <td>
+            <span *ngIf="customer.outstandingBalance"
+                  class="badge"
+                  [ngClass]="{
+                    'badge-success': customer.outstandingBalance === 0,
+                    'badge-warning': customer.outstandingBalance > 0 && customer.outstandingBalance <= 50000,
+                    'badge-danger': customer.outstandingBalance > 50000
+                  }">
+              ₹{{ customer.outstandingBalance | number:'1.2-2' }}
+            </span>
+            <span *ngIf="!customer.outstandingBalance" class="text-muted">₹0.00</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="{
+              'badge-success': customer.isActive,
+              'badge-danger': !customer.isActive
+            }">
+              {{ customer.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <div class="btn-group" role="group">
+              <button class="btn btn-sm btn-info" [routerLink]="['/customers', customer.id]" title="View">
+                <i class="fa fa-eye"></i>
+              </button>
+              <button class="btn btn-sm btn-primary" [routerLink]="['/customers', customer.id, 'edit']" title="Edit">
+                <i class="fa fa-edit"></i>
+              </button>
+              <button
+                class="btn btn-sm"
+                [ngClass]="customer.isActive ? 'btn-warning' : 'btn-success'"
+                (click)="toggleCustomerStatus(customer)"
+                [title]="customer.isActive ? 'Deactivate' : 'Activate'">
+                <i class="fa" [ngClass]="customer.isActive ? 'fa-pause' : 'fa-play'"></i>
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="deleteCustomer(customer)" title="Delete">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- No Data Message -->
+    <div *ngIf="customers.length === 0" class="text-center py-4">
+      <p class="text-muted">No customers found matching the current filters.</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalPages > 1" class="pagination-section">
+    <nav aria-label="Customer pagination">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" [class.disabled]="currentPage === 0">
+          <button class="page-link" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+            First
+          </button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 0">
+          <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+            Previous
+          </button>
+        </li>
+
+        <li *ngFor="let page of getPages()"
+            class="page-item"
+            [class.active]="page === currentPage">
+          <button class="page-link" (click)="onPageChange(page)">
+            {{ page + 1 }}
+          </button>
+        </li>
+
+        <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+          <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
+            Next
+          </button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+          <button class="page-link" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+            Last
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="pagination-info text-center">
+      Showing {{ (currentPage * pageSize) + 1 }} to {{ getMaxShownItems() }}
+      of {{ totalElements }} entries
+    </div>
+  </div>
+</div>
+

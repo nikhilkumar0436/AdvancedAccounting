@@ -1,0 +1,594 @@
+<div class="customer-form-container">
+  <div class="header">
+    <h2>{{ isEditMode ? 'Edit Customer' : 'Add New Customer' }}</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/customers">Customers</a></li>
+        <li class="breadcrumb-item active">{{ isEditMode ? 'Edit' : 'New' }}</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Customer Form -->
+  <form *ngIf="!loading" [formGroup]="customerForm" (ngSubmit)="onSubmit()" class="customer-form">
+
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <h4 class="section-title">Basic Information</h4>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="companyId" class="required">Company:</label>
+            <select
+              id="companyId"
+              class="form-control"
+              formControlName="companyId"
+              [class.is-invalid]="isFieldInvalid('companyId')"
+              [disabled]="loadingCompanies"
+            >
+              <option value="">Select a company</option>
+              <option *ngFor="let company of companies" [value]="company.id">
+                {{ company.companyName }} ({{ company.gstin }})
+              </option>
+            </select>
+            <div *ngIf="loadingCompanies" class="text-muted small">Loading companies...</div>
+            <div *ngIf="isFieldInvalid('companyId')" class="invalid-feedback">
+              {{ getFieldError('companyId') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="customerName" class="required">Customer Name:</label>
+            <input
+              type="text"
+              id="customerName"
+              class="form-control"
+              formControlName="customerName"
+              [class.is-invalid]="isFieldInvalid('customerName')"
+              placeholder="Enter customer name"
+            />
+            <div *ngIf="isFieldInvalid('customerName')" class="invalid-feedback">
+              {{ getFieldError('customerName') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="customerType" class="required">Customer Type:</label>
+            <select
+              id="customerType"
+              class="form-control"
+              formControlName="customerType"
+              [class.is-invalid]="isFieldInvalid('customerType')"
+            >
+              <option *ngFor="let type of customerTypes" [value]="type">{{ type }}</option>
+            </select>
+            <div *ngIf="isFieldInvalid('customerType')" class="invalid-feedback">
+              {{ getFieldError('customerType') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                id="isActive"
+                class="form-check-input"
+                formControlName="isActive"
+              />
+              <label for="isActive" class="form-check-label">Active Customer</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="gstin">GSTIN:</label>
+            <input
+              type="text"
+              id="gstin"
+              class="form-control"
+              formControlName="gstin"
+              [class.is-invalid]="isFieldInvalid('gstin')"
+              placeholder="22AAAAA0000A1Z5"
+              maxlength="15"
+            />
+            <div *ngIf="isFieldInvalid('gstin')" class="invalid-feedback">
+              {{ getFieldError('gstin') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="pan">PAN:</label>
+            <input
+              type="text"
+              id="pan"
+              class="form-control"
+              formControlName="pan"
+              [class.is-invalid]="isFieldInvalid('pan')"
+              placeholder="AAAAA0000A"
+              maxlength="10"
+            />
+            <div *ngIf="isFieldInvalid('pan')" class="invalid-feedback">
+              {{ getFieldError('pan') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="creditLimit">Credit Limit (₹):</label>
+            <input
+              type="number"
+              id="creditLimit"
+              class="form-control"
+              formControlName="creditLimit"
+              [class.is-invalid]="isFieldInvalid('creditLimit')"
+              min="0"
+              step="0.01"
+            />
+            <div *ngIf="isFieldInvalid('creditLimit')" class="invalid-feedback">
+              {{ getFieldError('creditLimit') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information Section -->
+    <div class="form-section">
+      <h4 class="section-title">Contact Information</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="phoneNumber">Phone Number:</label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              class="form-control"
+              formControlName="phoneNumber"
+              [class.is-invalid]="isFieldInvalid('phoneNumber')"
+              placeholder="1234567890"
+              maxlength="10"
+            />
+            <div *ngIf="isFieldInvalid('phoneNumber')" class="invalid-feedback">
+              {{ getFieldError('phoneNumber') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input
+              type="email"
+              id="email"
+              class="form-control"
+              formControlName="email"
+              [class.is-invalid]="isFieldInvalid('email')"
+              placeholder="customer@example.com"
+            />
+            <div *ngIf="isFieldInvalid('email')" class="invalid-feedback">
+              {{ getFieldError('email') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Primary Address Section -->
+    <div class="form-section">
+      <h4 class="section-title">Primary Address</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="addressLine1">Address Line 1:</label>
+            <input
+              type="text"
+              id="addressLine1"
+              class="form-control"
+              formControlName="addressLine1"
+              [class.is-invalid]="isFieldInvalid('addressLine1')"
+              placeholder="Street address"
+            />
+            <div *ngIf="isFieldInvalid('addressLine1')" class="invalid-feedback">
+              {{ getFieldError('addressLine1') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="addressLine2">Address Line 2:</label>
+            <input
+              type="text"
+              id="addressLine2"
+              class="form-control"
+              formControlName="addressLine2"
+              placeholder="Area, landmark"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="city">City:</label>
+            <input
+              type="text"
+              id="city"
+              class="form-control"
+              formControlName="city"
+              [class.is-invalid]="isFieldInvalid('city')"
+            />
+            <div *ngIf="isFieldInvalid('city')" class="invalid-feedback">
+              {{ getFieldError('city') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="state">State:</label>
+            <input
+              type="text"
+              id="state"
+              class="form-control"
+              formControlName="state"
+              [class.is-invalid]="isFieldInvalid('state')"
+            />
+            <div *ngIf="isFieldInvalid('state')" class="invalid-feedback">
+              {{ getFieldError('state') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="pincode">Pincode:</label>
+            <input
+              type="text"
+              id="pincode"
+              class="form-control"
+              formControlName="pincode"
+              [class.is-invalid]="isFieldInvalid('pincode')"
+              placeholder="123456"
+              maxlength="6"
+            />
+            <div *ngIf="isFieldInvalid('pincode')" class="invalid-feedback">
+              {{ getFieldError('pincode') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="country">Country:</label>
+            <input
+              type="text"
+              id="country"
+              class="form-control"
+              formControlName="country"
+              [class.is-invalid]="isFieldInvalid('country')"
+            />
+            <div *ngIf="isFieldInvalid('country')" class="invalid-feedback">
+              {{ getFieldError('country') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billing Address Section -->
+    <div class="form-section">
+      <h4 class="section-title">
+        Billing Address
+        <button type="button" class="btn btn-sm btn-outline-primary ml-2" (click)="copyAddressToBilling()">
+          Copy from Primary
+        </button>
+      </h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="billingAddressLine1">Address Line 1:</label>
+            <input
+              type="text"
+              id="billingAddressLine1"
+              class="form-control"
+              formControlName="billingAddressLine1"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="billingAddressLine2">Address Line 2:</label>
+            <input
+              type="text"
+              id="billingAddressLine2"
+              class="form-control"
+              formControlName="billingAddressLine2"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="billingCity">City:</label>
+            <input
+              type="text"
+              id="billingCity"
+              class="form-control"
+              formControlName="billingCity"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="billingState">State:</label>
+            <input
+              type="text"
+              id="billingState"
+              class="form-control"
+              formControlName="billingState"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="billingPincode">Pincode:</label>
+            <input
+              type="text"
+              id="billingPincode"
+              class="form-control"
+              formControlName="billingPincode"
+              maxlength="6"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="billingCountry">Country:</label>
+            <input
+              type="text"
+              id="billingCountry"
+              class="form-control"
+              formControlName="billingCountry"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shipping Address Section -->
+    <div class="form-section">
+      <h4 class="section-title">
+        Shipping Address
+        <button type="button" class="btn btn-sm btn-outline-primary ml-2" (click)="copyAddressToShipping()">
+          Copy from Primary
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary ml-1" (click)="copyBillingToShipping()">
+          Copy from Billing
+        </button>
+      </h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="shippingAddressLine1">Address Line 1:</label>
+            <input
+              type="text"
+              id="shippingAddressLine1"
+              class="form-control"
+              formControlName="shippingAddressLine1"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="shippingAddressLine2">Address Line 2:</label>
+            <input
+              type="text"
+              id="shippingAddressLine2"
+              class="form-control"
+              formControlName="shippingAddressLine2"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="shippingCity">City:</label>
+            <input
+              type="text"
+              id="shippingCity"
+              class="form-control"
+              formControlName="shippingCity"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="shippingState">State:</label>
+            <input
+              type="text"
+              id="shippingState"
+              class="form-control"
+              formControlName="shippingState"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="shippingPincode">Pincode:</label>
+            <input
+              type="text"
+              id="shippingPincode"
+              class="form-control"
+              formControlName="shippingPincode"
+              maxlength="6"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="shippingCountry">Country:</label>
+            <input
+              type="text"
+              id="shippingCountry"
+              class="form-control"
+              formControlName="shippingCountry"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Persons Section -->
+    <div class="form-section">
+      <h4 class="section-title">
+        Contact Persons
+        <button type="button" class="btn btn-sm btn-success ml-2" (click)="addContactPerson()">
+          <i class="fa fa-plus"></i> Add Contact
+        </button>
+      </h4>
+
+      <div formArrayName="contactPersons">
+        <div *ngFor="let contact of contactPersonsArray.controls; let i = index"
+             [formGroupName]="i"
+             class="contact-person-item">
+          <div class="contact-header">
+            <h6>Contact Person {{ i + 1 }}</h6>
+            <button type="button" class="btn btn-sm btn-danger" (click)="removeContactPerson(i)">
+              <i class="fa fa-trash"></i> Remove
+            </button>
+          </div>
+
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Name:</label>
+                <input type="text" class="form-control" formControlName="name" />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Designation:</label>
+                <input type="text" class="form-control" formControlName="designation" />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Phone:</label>
+                <input type="tel" class="form-control" formControlName="phoneNumber" maxlength="10" />
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Email:</label>
+                <input type="email" class="form-control" formControlName="email" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GST Information Section -->
+    <div class="form-section">
+      <h4 class="section-title">GST Information</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                id="isGstRegistered"
+                class="form-check-input"
+                formControlName="isGstRegistered"
+              />
+              <label for="isGstRegistered" class="form-check-label">GST Registered</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="gstRegistrationDate">GST Registration Date:</label>
+            <input
+              type="date"
+              id="gstRegistrationDate"
+              class="form-control"
+              formControlName="gstRegistrationDate"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <!-- Debug info (remove in production) -->
+      <div class="debug-info" style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 4px;">
+        <small>
+          <strong>Debug Info:</strong><br>
+          Form Valid: {{ customerForm.valid }}<br>
+          Form Pristine: {{ customerForm.pristine }}<br>
+          Form Touched: {{ customerForm.touched }}<br>
+          Customer Name Valid: {{ customerForm.get('customerName')?.valid }}<br>
+          Customer Name Value: {{ customerForm.get('customerName')?.value }}<br>
+          <button type="button" class="btn btn-sm btn-info" (click)="checkFormValidity()">Check Form Validity</button>
+        </small>
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="submitting || customerForm.invalid">
+        <span *ngIf="submitting" class="spinner-border spinner-border-sm mr-2"></span>
+        {{ isEditMode ? 'Update Customer' : 'Create Customer' }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-secondary ml-2"
+        (click)="onCancel()"
+        [disabled]="submitting">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+

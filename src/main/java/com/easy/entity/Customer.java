@@ -1,5 +1,6 @@
 package com.easy.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -20,7 +21,8 @@ public class Customer extends Auditable {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
+    @JoinColumn(name = "company_id", nullable = true)
+    @JsonIgnore
     private CompanyMaster company;
 
     @Column(name = "customer_name", nullable = false, length = 255)
@@ -137,8 +139,13 @@ public class Customer extends Auditable {
     private String shippingPincode;
 
     // Future enhancements: Custom fields for flexibility
-    @Column(name = "custom_fields", columnDefinition = "jsonb")
-    private String customFields; // Store additional custom data
+    // TODO: Re-enable custom fields with proper JSON handling
+    // @Column(name = "custom_fields", columnDefinition = "jsonb")
+    // @Convert(converter = com.easy.entity.converter.JsonConverter.class)
+    // private Object customFields; // Store additional custom data
+
+    @Transient
+    private Object customFields; // Temporary transient field to avoid mapping issues
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -154,6 +161,7 @@ public class Customer extends Auditable {
 
     // Invoices relationship
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<InvoiceMaster> invoices;
 
     // Enum for customer type

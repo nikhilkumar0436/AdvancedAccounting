@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/customers")
+@RequestMapping("/customers")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
 @Tag(name = "Customer Management", description = "APIs for managing customers")
-//@CrossOrigin(origins = {"http://localhost:3000", "https://yourdomain.com"})
 public class CustomerController {
 
     private final CustomerService customerService;
@@ -41,20 +40,21 @@ public class CustomerController {
             description = "Retrieve a paginated list of customers with optional filters")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Customers retrieved successfully",
-                    content = @Content(schema = @Schema(implementation = Page.class))),
+                    content = @Content(schema = @Schema(implementation = Customer.class))),
             @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
 
-    public ResponseEntity<Page<Customer>> getCustomers(
+    public ResponseEntity<List<Customer>> getCustomers(
             @Parameter(description = "Filter and pagination request") @Valid @RequestBody CustomRequest request) {
 
         log.info("Fetching customers with filters: page={}, size={}", request.getPage(), request.getSize());
         Page<Customer> customers = customerService.getCustomersWithFilters(request);
         log.info("Retrieved {} customers", customers.getTotalElements());
 
-        return ResponseEntity.ok(customers);
+
+        return ResponseEntity.ok(customers.getContent());
     }
 
     @GetMapping("/{id}")

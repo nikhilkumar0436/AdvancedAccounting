@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { InvoiceService } from '../../../services/invoice.service';
 import { CustomerService } from '../../../services/customer.service';
+import { ProductService } from '../../../services/product.service';
 import {
   InvoiceRequest,
   InvoiceResponse,
@@ -12,6 +13,7 @@ import {
   InvoiceItemRequest
 } from '../../../models/invoice.model';
 import { CustomerResponse } from '../../../models/customer.model';
+import { Product } from '../../../models/product.model';
 
 @Component({
   selector: 'app-invoice-form',
@@ -26,6 +28,7 @@ export class InvoiceFormComponent implements OnInit {
   loading: boolean = false;
   submitting: boolean = false;
   customers: CustomerResponse[] = [];
+  products: Product[] = [];
 
   // Enums for template
   invoiceTypes = Object.values(InvoiceType);
@@ -35,6 +38,7 @@ export class InvoiceFormComponent implements OnInit {
     private fb: FormBuilder,
     private invoiceService: InvoiceService,
     private customerService: CustomerService,
+    private productService: ProductService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -46,6 +50,7 @@ export class InvoiceFormComponent implements OnInit {
     this.isEditMode = !!this.invoiceId;
 
     this.loadCustomers();
+    this.loadProducts();
 
     if (this.isEditMode && this.invoiceId) {
       this.loadInvoice(this.invoiceId);
@@ -119,6 +124,99 @@ export class InvoiceFormComponent implements OnInit {
     });
   }
 
+  loadProducts(): void {
+    this.productService.getAllProducts().subscribe({
+      next: (products: any) => {
+        this.products = products;
+      },
+      error: (error: any) => {
+        console.error('Error loading products:', error);
+      }
+    });
+  }
+
+  onProductSelected(index: number, productId: string): void {
+    if (productId) {
+      const product = this.products.find(p => p.id === productId);
+      if (product) {
+        const item = this.invoiceItemsArray.at(index);
+        item.patchValue({
+          description: product.productName,
+          hsnCode: product.hsnSacCode || '',
+          unit: product.unitOfMeasurement || 'Nos',
+          rate: product.sellingPrice || 0
+        });
+        this.calculateItemAmount(index);
+      }
+    }
+  }
+
+  calculateItemAmount(index: number): void {
+    const item = this.invoiceItemsArray.at(index);
+    const quantity = item.get('quantity')?.value || 0;
+    const rate = item.get('rate')?.value || 0;
+    const discountPercentage = item.get('discountPercentage')?.value || 0;
+
+    const amount = quantity * rate;
+    const discountAmount = (amount * discountPercentage) / 100;
+    const taxableAmount = amount - discountAmount;
+
+    item.patchValue({
+      amount: amount,
+      discountAmount: discountAmount,
+      taxableAmount: taxableAmount
+    });
+
+    this.calculateTaxes(index);
+  }
+
+  calculateTaxes(index: number): void {
+    const item = this.invoiceItemsArray.at(index);
+    const taxableAmount = item.get('taxableAmount')?.value || 0;
+    const isInterState = this.invoiceForm.get('isInterState')?.value || false;
+
+    if (isInterState) {
+      const igstRate = item.get('igstRate')?.value || 0;
+      const igstAmount = (taxableAmount * igstRate) / 100;
+      item.patchValue({
+        igstAmount: igstAmount,
+        cgstAmount: 0,
+        sgstAmount: 0
+      });
+    } else {
+      const cgstRate = item.get('cgstRate')?.value || 0;
+      const sgstRate = item.get('sgstRate')?.value || 0;
+      const cgstAmount = (taxableAmount * cgstRate) / 100;
+      const sgstAmount = (taxableAmount * sgstRate) / 100;
+      item.patchValue({
+        cgstAmount: cgstAmount,
+        sgstAmount: sgstAmount,
+        igstAmount: 0
+      });
+    }
+
+    const cessRate = item.get('cessRate')?.value || 0;
+    const cessAmount = (taxableAmount * cessRate) / 100;
+
+    const cgstAmount = item.get('cgstAmount')?.value || 0;
+    const sgstAmount = item.get('sgstAmount')?.value || 0;
+    const igstAmount = item.get('igstAmount')?.value || 0;
+
+    const totalAmount = taxableAmount + cgstAmount + sgstAmount + igstAmount + cessAmount;
+
+    item.patchValue({
+      cessAmount: cessAmount,
+      totalAmount: totalAmount
+    });
+  }
+
+  calculateTotals(): void {
+    // This method can be used to recalculate all totals
+    for (let i = 0; i < this.invoiceItemsArray.length; i++) {
+      this.calculateItemAmount(i);
+    }
+  }
+
   loadInvoice(id: string): void {
     this.loading = true;
     this.invoiceService.getInvoiceById(id).subscribe({
@@ -180,70 +278,6 @@ export class InvoiceFormComponent implements OnInit {
     });
   }
 
-  calculateItemAmount(index: number): void {
-    const item = this.invoiceItemsArray.at(index);
-    const quantity = item.get('quantity')?.value || 0;
-    const rate = item.get('rate')?.value || 0;
-    const discountPercentage = item.get('discountPercentage')?.value || 0;
-
-    const amount = quantity * rate;
-    const discountAmount = (amount * discountPercentage) / 100;
-    const taxableAmount = amount - discountAmount;
-
-    item.patchValue({
-      amount: amount,
-      discountAmount: discountAmount,
-      taxableAmount: taxableAmount
-    });
-
-    this.calculateTaxes(index);
-  }
-
-  calculateTaxes(index: number): void {
-    const item = this.invoiceItemsArray.at(index);
-    const taxableAmount = item.get('taxableAmount')?.value || 0;
-    const isInterState = this.invoiceForm.get('isInterState')?.value || false;
-
-    if (isInterState) {
-      const igstRate = item.get('igstRate')?.value || 0;
-      const igstAmount = (taxableAmount * igstRate) / 100;
-      item.patchValue({
-        igstAmount: igstAmount,
-        cgstAmount: 0,
-        sgstAmount: 0
-      });
-    } else {
-      const cgstRate = item.get('cgstRate')?.value || 0;
-      const sgstRate = item.get('sgstRate')?.value || 0;
-      const cgstAmount = (taxableAmount * cgstRate) / 100;
-      const sgstAmount = (taxableAmount * sgstRate) / 100;
-      item.patchValue({
-        cgstAmount: cgstAmount,
-        sgstAmount: sgstAmount,
-        igstAmount: 0
-      });
-    }
-
-    const cessRate = item.get('cessRate')?.value || 0;
-    const cessAmount = (taxableAmount * cessRate) / 100;
-    item.patchValue({ cessAmount: cessAmount });
-
-    const totalAmount = taxableAmount +
-      (item.get('cgstAmount')?.value || 0) +
-      (item.get('sgstAmount')?.value || 0) +
-      (item.get('igstAmount')?.value || 0) +
-      cessAmount;
-
-    item.patchValue({ totalAmount: totalAmount });
-
-    this.calculateTotals();
-  }
-
-  calculateTotals(): void {
-    // Calculate invoice totals based on items
-    // This is a simplified version - you might want to add more detailed calculations
-  }
-
   onSubmit(): void {
     if (this.invoiceForm.invalid) {
       this.markFormGroupTouched(this.invoiceForm);
@@ -285,6 +319,39 @@ export class InvoiceFormComponent implements OnInit {
     this.router.navigate(['/invoices']);
   }
 
+  isFormReadyToSubmit(): boolean {
+    return this.invoiceForm.valid && this.invoiceItemsArray.length > 0;
+  }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.invoiceForm.get(fieldName);
+    return field ? field.invalid && (field.dirty || field.touched) : false;
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.invoiceForm.get(fieldName);
+    if (field?.errors && (field.dirty || field.touched)) {
+      if (field.errors['required']) return `${fieldName} is required`;
+      if (field.errors['maxlength']) return `${fieldName} is too long`;
+      if (field.errors['minlength']) return `${fieldName} is too short`;
+      if (field.errors['min']) return `${fieldName} must be greater than 0`;
+      if (field.errors['max']) return `${fieldName} is too large`;
+    }
+    return '';
+  }
+
+  logFormErrors(): void {
+    console.log('Form errors:', this.invoiceForm.errors);
+    console.log('Form value:', this.invoiceForm.value);
+    console.log('Form valid:', this.invoiceForm.valid);
+    Object.keys(this.invoiceForm.controls).forEach(key => {
+      const control = this.invoiceForm.get(key);
+      if (control?.invalid) {
+        console.log(`Field ${key} errors:`, control.errors);
+      }
+    });
+  }
+
   private calculateTotalTaxableAmount(): number {
     return this.invoiceItemsArray.controls.reduce((total, item) => {
       return total + (item.get('taxableAmount')?.value || 0);
@@ -310,22 +377,5 @@ export class InvoiceFormComponent implements OnInit {
         this.markFormGroupTouched(control);
       }
     });
-  }
-
-  getFieldError(fieldName: string): string {
-    const control = this.invoiceForm.get(fieldName);
-    if (control && control.errors && control.touched) {
-      if (control.errors['required']) return `${fieldName} is required`;
-      if (control.errors['maxlength']) return `${fieldName} is too long`;
-      if (control.errors['minlength']) return `${fieldName} is too short`;
-      if (control.errors['min']) return `${fieldName} cannot be negative`;
-      if (control.errors['max']) return `${fieldName} is too large`;
-    }
-    return '';
-  }
-
-  isFieldInvalid(fieldName: string): boolean {
-    const control = this.invoiceForm.get(fieldName);
-    return !!(control && control.errors && control.touched);
   }
 }

@@ -1,0 +1,277 @@
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Product Management</h2>
+    <div>
+      <button routerLink="/products/new" class="btn btn-primary">
+        <i class="fa fa-plus"></i> Add New Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form (ngSubmit)="onSearch()">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label for="searchTerm">Search Products</label>
+              <input type="text" id="searchTerm" class="form-control"
+                     [(ngModel)]="searchTerm" name="searchTerm"
+                     placeholder="Product name, code, or description">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label for="filterCategory">Category</label>
+              <input type="text" id="filterCategory" class="form-control"
+                     [(ngModel)]="filterCategory" name="filterCategory"
+                     placeholder="Category">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label for="filterProductType">Type</label>
+              <select id="filterProductType" class="form-control"
+                      [(ngModel)]="filterProductType" name="filterProductType">
+                <option value="">All Types</option>
+                <option *ngFor="let type of productTypes" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label for="filterHsnSacCode">HSN/SAC Code</label>
+              <input type="text" id="filterHsnSacCode" class="form-control"
+                     [(ngModel)]="filterHsnSacCode" name="filterHsnSacCode"
+                     placeholder="HSN/SAC Code">
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-group">
+              <label for="filterIsActive">Status</label>
+              <select id="filterIsActive" class="form-control"
+                      [(ngModel)]="filterIsActive" name="filterIsActive">
+                <option value="">All</option>
+                <option [value]="true">Active</option>
+                <option [value]="false">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fa fa-search"></i> Search
+                </button>
+                <button type="button" class="btn btn-outline-secondary" (click)="onClearFilters()">
+                  <i class="fa fa-times"></i> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="filterIsLowStock"
+                     [(ngModel)]="filterIsLowStock" name="filterIsLowStock" [value]="true">
+              <label class="form-check-label" for="filterIsLowStock">
+                Low Stock Only
+              </label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0">Products ({{ totalElements }})</h5>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-2">
+          <label for="pageSize" class="form-label mb-0">Show:</label>
+          <select id="pageSize" class="form-select form-select-sm"
+                  [(ngModel)]="pageSize" (change)="onPageSizeChange()" style="width: auto;">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div *ngIf="loading" class="text-center p-4">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && products.length === 0" class="text-center p-4">
+        <p class="text-muted">No products found.</p>
+      </div>
+
+      <div *ngIf="!loading && products.length > 0" class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th (click)="onSort('productName')" class="sortable">
+                Product Name
+                <i class="fa fa-sort"
+                   [class.fa-sort-up]="sortBy === 'productName' && sortDirection === 'ASC'"
+                   [class.fa-sort-down]="sortBy === 'productName' && sortDirection === 'DESC'"></i>
+              </th>
+              <th (click)="onSort('productCode')" class="sortable">
+                Product Code
+                <i class="fa fa-sort"
+                   [class.fa-sort-up]="sortBy === 'productCode' && sortDirection === 'ASC'"
+                   [class.fa-sort-down]="sortBy === 'productCode' && sortDirection === 'DESC'"></i>
+              </th>
+              <th>Category</th>
+              <th>HSN/SAC</th>
+              <th>Type</th>
+              <th (click)="onSort('sellingPrice')" class="sortable text-end">
+                Selling Price
+                <i class="fa fa-sort"
+                   [class.fa-sort-up]="sortBy === 'sellingPrice' && sortDirection === 'ASC'"
+                   [class.fa-sort-down]="sortBy === 'sellingPrice' && sortDirection === 'DESC'"></i>
+              </th>
+              <th (click)="onSort('currentStock')" class="sortable text-end">
+                Stock
+                <i class="fa fa-sort"
+                   [class.fa-sort-up]="sortBy === 'currentStock' && sortDirection === 'ASC'"
+                   [class.fa-sort-down]="sortBy === 'currentStock' && sortDirection === 'DESC'"></i>
+              </th>
+              <th>Profit %</th>
+              <th>Status</th>
+              <th width="120">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let product of products">
+              <td>
+                <div>
+                  <strong>{{ product.productName }}</strong>
+                  <div *ngIf="product.description" class="small text-muted">
+                    {{ product.description | slice:0:50 }}{{ product.description!.length > 50 ? '...' : '' }}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-secondary">{{ product.productCode || 'N/A' }}</span>
+              </td>
+              <td>
+                <span class="badge badge-info">{{ product.category || 'Uncategorized' }}</span>
+              </td>
+              <td>{{ product.hsnSacCode }}</td>
+              <td>
+                <span class="badge"
+                      [class.badge-primary]="product.productType === 'GOODS'"
+                      [class.badge-secondary]="product.productType === 'SERVICES'">
+                  {{ product.productType }}
+                </span>
+              </td>
+              <td class="text-end">
+                <strong>{{ formatCurrency(product.sellingPrice) }}</strong>
+                <div *ngIf="product.purchasePrice" class="small text-muted">
+                  Cost: {{ formatCurrency(product.purchasePrice) }}
+                </div>
+              </td>
+              <td class="text-end">
+                <span class="badge" [ngClass]="getStockLevelClass(product)">
+                  {{ formatNumber(product.currentStock) }} {{ product.unitOfMeasurement }}
+                </span>
+                <div *ngIf="product.reorderLevel" class="small text-muted">
+                  Reorder: {{ formatNumber(product.reorderLevel) }}
+                </div>
+              </td>
+              <td>
+                <span *ngIf="product.profitPercentage"
+                      [ngClass]="getProfitMarginClass(product.profitPercentage)">
+                  {{ product.profitPercentage | number:'1.1-1' }}%
+                </span>
+                <span *ngIf="!product.profitPercentage" class="text-muted">N/A</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'badge-success': product.isActive,
+                  'badge-danger': !product.isActive
+                }">
+                  {{ product.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button [routerLink]="['/products', product.id, 'edit']"
+                          class="btn btn-sm btn-outline-primary" title="Edit">
+                    <i class="fa fa-edit"></i>
+                  </button>
+                  <button (click)="toggleProductStatus(product)"
+                          class="btn btn-sm btn-outline-warning"
+                          [title]="product.isActive ? 'Deactivate' : 'Activate'">
+                    <i class="fa" [class.fa-toggle-on]="product.isActive" [class.fa-toggle-off]="!product.isActive"></i>
+                  </button>
+                  <button (click)="deleteProduct(product)"
+                          class="btn btn-sm btn-outline-danger" title="Delete">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!loading && totalPages > 1" class="card-footer">
+      <nav aria-label="Product pagination">
+        <ul class="pagination justify-content-center mb-0">
+          <li class="page-item" [class.disabled]="currentPage === 0">
+            <button class="page-link" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+              First
+            </button>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === 0">
+            <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+              Previous
+            </button>
+          </li>
+
+          <li *ngFor="let page of getPages()"
+              class="page-item" [class.active]="page === currentPage">
+            <button class="page-link" (click)="onPageChange(page)">
+              {{ page + 1 }}
+            </button>
+          </li>
+
+          <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+            <button class="page-link" (click)="onPageChange(currentPage + 1)"
+                    [disabled]="currentPage === totalPages - 1">
+              Next
+            </button>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+            <button class="page-link" (click)="onPageChange(totalPages - 1)"
+                    [disabled]="currentPage === totalPages - 1">
+              Last
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="text-center text-muted mt-2">
+        Showing {{ currentPage * pageSize + 1 }} to
+        {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of
+        {{ totalElements }} products
+      </div>
+    </div>
+  </div>
+</div>

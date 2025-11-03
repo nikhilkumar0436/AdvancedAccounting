@@ -7,6 +7,15 @@
         <li class="breadcrumb-item active">{{ isEditMode ? 'Edit' : 'New' }}</li>
       </ol>
     </nav>
+
+    <!-- Form Status Debug Info -->
+    <div class="alert alert-info">
+      <small>
+        Form Valid: {{ invoiceForm.valid }} |
+        Items Count: {{ invoiceItemsArray.length }} |
+        Ready to Submit: {{ isFormReadyToSubmit() }}
+      </small>
+    </div>
   </div>
 
   <!-- Loading Indicator -->
@@ -229,14 +238,45 @@
           </div>
 
           <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Product:</label>
+                <select
+                  class="form-control"
+                  formControlName="productId"
+                  (change)="onProductSelected(i, $any($event.target).value)">
+                  <option value="">Select Product</option>
+                  <option *ngFor="let product of products" [value]="product.id">
+                    {{ product.productName }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-8">
               <div class="form-group">
                 <label>Description:</label>
                 <input type="text" class="form-control" formControlName="description" />
               </div>
             </div>
+          </div>
 
-            <div class="col-md-3">
+          <div class="row">
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>HSN Code:</label>
+                <input type="text" class="form-control" formControlName="hsnCode" />
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Unit:</label>
+                <input type="text" class="form-control" formControlName="unit" />
+              </div>
+            </div>
+
+            <div class="col-md-2">
               <div class="form-group">
                 <label>Quantity:</label>
                 <input type="number" class="form-control" formControlName="quantity"
@@ -244,11 +284,26 @@
               </div>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-2">
               <div class="form-group">
                 <label>Rate:</label>
                 <input type="number" class="form-control" formControlName="rate"
                        (blur)="calculateItemAmount(i)" />
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Discount %:</label>
+                <input type="number" class="form-control" formControlName="discountPercentage"
+                       (blur)="calculateItemAmount(i)" />
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Amount:</label>
+                <input type="number" class="form-control" formControlName="amount" readonly />
               </div>
             </div>
           </div>
@@ -337,7 +392,7 @@
       <button
         type="submit"
         class="btn btn-primary"
-        [disabled]="submitting || invoiceForm.invalid">
+        [disabled]="submitting || !isFormReadyToSubmit()">
         <span *ngIf="submitting" class="spinner-border spinner-border-sm mr-2"></span>
         {{ isEditMode ? 'Update Invoice' : 'Create Invoice' }}
       </button>
@@ -348,6 +403,14 @@
         (click)="onCancel()"
         [disabled]="submitting">
         Cancel
+      </button>
+
+      <!-- Debug button -->
+      <button
+        type="button"
+        class="btn btn-info ml-2"
+        (click)="logFormErrors()">
+        Debug Form
       </button>
     </div>
   </form>

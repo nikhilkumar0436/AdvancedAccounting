@@ -1,5 +1,6 @@
 package com.easy.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,6 +20,7 @@ public class ProductMaster extends Auditable {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "company_id", nullable = false)
     private CompanyMaster company;
 
@@ -53,7 +55,7 @@ public class ProductMaster extends Auditable {
     @Column(name = "mrp", precision = 15, scale = 2)
     private BigDecimal mrp;
 
-    @Lob
+//    @Lob
     @Column(name = "description")
     private String description;
 
@@ -96,11 +98,13 @@ public class ProductMaster extends Auditable {
     @Column(name = "has_variants")
     private Boolean hasVariants = false;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_product_id")
     private ProductMaster parentProduct;
+    @Column(columnDefinition = "variant_attributes")
 
-    @Column(name = "variant_attributes", columnDefinition = "jsonb")
+//    @Column(name = "variant_attributes", columnDefinition = "jsonb")
     private String variantAttributes;
 
     // Future enhancements: Supplier and procurement
@@ -130,13 +134,15 @@ public class ProductMaster extends Auditable {
     @Column(name = "product_image_url", length = 500)
     private String productImageUrl;
 
-    @Column(name = "product_images", columnDefinition = "jsonb")
+    @Column(name = "product_images")
+//    @Column(name = "product_images", columnDefinition = "jsonb")
     private String productImages;
 
     @Column(name = "weight", precision = 10, scale = 3)
     private BigDecimal weight;
 
-    @Column(name = "dimensions", columnDefinition = "jsonb")
+
+//    @Column(name = "dimensions", columnDefinition = "jsonb")
     private String dimensions;
 
     @Column(name = "is_published_online")
@@ -145,7 +151,7 @@ public class ProductMaster extends Auditable {
     @Column(name = "seo_title", length = 255)
     private String seoTitle;
 
-    @Lob
+//    @Lob
     @Column(name = "seo_description")
     private String seoDescription;
 
@@ -153,7 +159,8 @@ public class ProductMaster extends Auditable {
     private String tags;
 
     // Future enhancements: Custom fields
-    @Column(name = "custom_fields", columnDefinition = "jsonb")
+//    @Type(JsonType.class)
+    @Column(name = "custom_fields")
     private String customFields;
 
     @Column(name = "is_active")

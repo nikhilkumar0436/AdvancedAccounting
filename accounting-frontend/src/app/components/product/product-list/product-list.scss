@@ -1,0 +1,153 @@
+.sortable {
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+}
+
+.badge {
+  font-size: 0.75rem;
+
+  &.badge-primary {
+    background-color: #007bff;
+    color: white;
+  }
+
+  &.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  &.badge-success {
+    background-color: #28a745;
+    color: white;
+  }
+
+  &.badge-danger {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  &.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+
+  &.badge-info {
+    background-color: #17a2b8;
+    color: white;
+  }
+}
+
+.btn-group .btn {
+  margin-right: 2px;
+
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+.table td {
+  vertical-align: middle;
+  font-size: 0.875rem;
+}
+
+.form-check-input:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 1rem;
+}
+
+.text-end {
+  text-align: right;
+}
+
+.fa-sort,
+.fa-sort-up,
+.fa-sort-down {
+  margin-left: 5px;
+  color: #6c757d;
+}
+
+.table-responsive {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.card-header h5 {
+  color: #495057;
+  font-weight: 600;
+}
+
+.form-select-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+// Custom scrollbar for table
+.table-responsive::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+// Animation for loading
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.table tbody tr {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .btn-group .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+  }
+}
+

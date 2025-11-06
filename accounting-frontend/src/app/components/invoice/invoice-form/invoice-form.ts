@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } fr
 import { InvoiceService } from '../../../services/invoice.service';
 import { CustomerService } from '../../../services/customer.service';
 import { ProductService } from '../../../services/product.service';
+import { CompanyService } from '../../../services/company.service';
 import {
   InvoiceRequest,
   InvoiceResponse,
@@ -14,6 +15,7 @@ import {
 } from '../../../models/invoice.model';
 import { CustomerResponse } from '../../../models/customer.model';
 import { Product } from '../../../models/product.model';
+import { CompanyResponse } from '../../../models/company.model';
 
 @Component({
   selector: 'app-invoice-form',
@@ -29,6 +31,7 @@ export class InvoiceFormComponent implements OnInit {
   submitting: boolean = false;
   customers: CustomerResponse[] = [];
   products: Product[] = [];
+  companies: CompanyResponse[] = [];
 
   // Enums for template
   invoiceTypes = Object.values(InvoiceType);
@@ -39,6 +42,7 @@ export class InvoiceFormComponent implements OnInit {
     private invoiceService: InvoiceService,
     private customerService: CustomerService,
     private productService: ProductService,
+    private companyService: CompanyService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -49,6 +53,7 @@ export class InvoiceFormComponent implements OnInit {
     this.invoiceId = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.invoiceId;
 
+    this.loadCompanies();
     this.loadCustomers();
     this.loadProducts();
 
@@ -59,6 +64,7 @@ export class InvoiceFormComponent implements OnInit {
 
   createForm(): FormGroup {
     return this.fb.group({
+      companyId: ['', Validators.required], // <-- Add companyId control
       customerId: ['', Validators.required],
       invoiceNumber: ['', [Validators.required, Validators.maxLength(50)]],
       invoiceDate: ['', Validators.required],
@@ -111,6 +117,22 @@ export class InvoiceFormComponent implements OnInit {
   removeInvoiceItem(index: number): void {
     this.invoiceItemsArray.removeAt(index);
     this.calculateTotals();
+  }
+
+  loadCompanies(): void {
+    this.companyService.getAllActiveCompanies().subscribe({
+      next: (companies: CompanyResponse[]) => {
+        this.companies = companies;
+        if (companies.length === 1) {
+          this.invoiceForm.get('companyId')?.setValue(companies[0].id);
+        } else if (companies.length > 1) {
+          this.invoiceForm.get('companyId')?.setValue(companies[0].id); // TODO: allow user selection if needed
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading companies:', error);
+      }
+    });
   }
 
   loadCustomers(): void {
@@ -290,10 +312,18 @@ export class InvoiceFormComponent implements OnInit {
     // Calculate totals before submitting
     this.calculateTotals();
 
+    // TODO: Replace this with actual companyId selection or retrieval logic
+    // For now, set a default or hardcoded companyId (should be dynamic in real app)
+    const companyId = this.getCompanyIdForInvoice();
+
+    const totalAmount = this.calculateTotalAmount();
+
     const request: InvoiceRequest = {
       ...formValue,
+      companyId, // Ensure companyId is sent
       totalTaxableAmount: this.calculateTotalTaxableAmount(),
-      totalAmount: this.calculateTotalAmount(),
+      totalAmount: totalAmount,
+      totalInvoiceAmount: totalAmount, // Ensure this is sent to backend
       grandTotal: this.calculateGrandTotal()
     };
 
@@ -313,6 +343,11 @@ export class InvoiceFormComponent implements OnInit {
         alert(`Error ${this.isEditMode ? 'updating' : 'creating'} invoice. Please try again.`);
       }
     });
+  }
+
+  // Add this helper to get companyId (replace with real logic as needed)
+  private getCompanyIdForInvoice(): string {
+    return this.invoiceForm.get('companyId')?.value || '';
   }
 
   onCancel(): void {

@@ -171,7 +171,7 @@ public class InvoiceMaster extends Auditable {
     @Column(name = "pdf_url", length = 500)
     private String pdfUrl; // Generated PDF URL
 
-    @Column(name = "attachments", columnDefinition = "jsonb")
+    @Column(name = "attachments")
     private String attachments; // Array of attachment URLs
 
     // Future enhancements: Sales and analytics
@@ -185,7 +185,7 @@ public class InvoiceMaster extends Auditable {
     private String orderReference; // Reference to original order/quotation
 
     // Future enhancements: Shipping and logistics
-    @Column(name = "shipping_address", columnDefinition = "jsonb")
+    @Column(name = "shipping_address")
     private String shippingAddress; // Complete shipping address if different from customer
 
     @Column(name = "shipping_cost", precision = 15, scale = 2)
@@ -198,7 +198,7 @@ public class InvoiceMaster extends Auditable {
     private LocalDate expectedDeliveryDate;
 
     // Future enhancements: Custom fields
-    @Column(name = "custom_fields", columnDefinition = "jsonb")
+    @Column(name = "custom_fields")
     private String customFields;
 
     // Status

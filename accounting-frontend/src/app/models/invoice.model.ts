@@ -46,6 +46,7 @@ export interface InvoiceRequest {
   totalIgstAmount?: number;
   totalCessAmount?: number;
   totalAmount: number;
+  totalInvoiceAmount: number; // <-- Added for backend compatibility
   roundOffAmount?: number;
   grandTotal: number;
   amountInWords?: string;

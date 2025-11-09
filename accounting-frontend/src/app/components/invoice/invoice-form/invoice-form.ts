@@ -32,10 +32,15 @@ export class InvoiceFormComponent implements OnInit {
   customers: CustomerResponse[] = [];
   products: Product[] = [];
   companies: CompanyResponse[] = [];
+  viewOnly: boolean = false;
 
   // Enums for template
   invoiceTypes = Object.values(InvoiceType);
   paymentTypes = Object.values(PaymentType);
+
+  private loadedInvoice: InvoiceResponse | null = null;
+  private companiesLoaded = false;
+  private invoiceLoaded = false;
 
   constructor(
     private fb: FormBuilder,
@@ -51,15 +56,23 @@ export class InvoiceFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.invoiceId = this.route.snapshot.paramMap.get('id');
-    this.isEditMode = !!this.invoiceId;
+    this.isEditMode = !!this.invoiceId && this.router.url.endsWith('edit');
+    this.viewOnly = !!this.invoiceId && !this.isEditMode;
+    this.companiesLoaded = false;
+    this.invoiceLoaded = false;
+    this.loadedInvoice = null;
 
-    this.loadCompanies();
-    this.loadCustomers();
-    this.loadProducts();
-
-    if (this.isEditMode && this.invoiceId) {
-      this.loadInvoice(this.invoiceId);
-    }
+    this.loadCompanies(() => {
+      this.companiesLoaded = true;
+      this.loadCustomers();
+      this.loadProducts();
+      if (this.isEditMode && this.invoiceId) {
+        if (this.invoiceLoaded && this.loadedInvoice) {
+          this.ensureCompanyInListAndPatch(this.loadedInvoice);
+        }
+        this.loadInvoice(this.invoiceId);
+      }
+    });
   }
 
   createForm(): FormGroup {
@@ -111,7 +124,31 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   addInvoiceItem(): void {
-    this.invoiceItemsArray.push(this.createInvoiceItemForm());
+    const newItem = this.createInvoiceItemForm();
+    this.setDefaultTaxRates(newItem);
+    this.invoiceItemsArray.push(newItem);
+  }
+
+  setDefaultTaxRates(itemForm: FormGroup): void {
+    const isInterState = this.invoiceForm.get('isInterState')?.value || false;
+
+    if (isInterState) {
+      // Inter-state: Use IGST (typically 18% for most goods)
+      itemForm.patchValue({
+        cgstRate: 0,
+        sgstRate: 0,
+        igstRate: 18, // Default IGST rate
+        cessRate: 0
+      });
+    } else {
+      // Intra-state: Use CGST + SGST (typically 9% each = 18% total)
+      itemForm.patchValue({
+        cgstRate: 9, // Default CGST rate
+        sgstRate: 9, // Default SGST rate
+        igstRate: 0,
+        cessRate: 0
+      });
+    }
   }
 
   removeInvoiceItem(index: number): void {
@@ -119,18 +156,20 @@ export class InvoiceFormComponent implements OnInit {
     this.calculateTotals();
   }
 
-  loadCompanies(): void {
+  loadCompanies(callback?: () => void): void {
     this.companyService.getAllActiveCompanies().subscribe({
       next: (companies: CompanyResponse[]) => {
         this.companies = companies;
-        if (companies.length === 1) {
+        // Only auto-select first company if NOT in edit mode and companyId is empty
+        if (!this.isEditMode && companies.length > 0 && !this.invoiceForm.get('companyId')?.value) {
           this.invoiceForm.get('companyId')?.setValue(companies[0].id);
-        } else if (companies.length > 1) {
-          this.invoiceForm.get('companyId')?.setValue(companies[0].id); // TODO: allow user selection if needed
+          console.log('Auto-selected company:', companies[0].id, companies[0].companyName);
         }
+        if (callback) callback();
       },
       error: (error: any) => {
         console.error('Error loading companies:', error);
+        if (callback) callback();
       }
     });
   }
@@ -170,6 +209,15 @@ export class InvoiceFormComponent implements OnInit {
         });
         this.calculateItemAmount(index);
       }
+    }
+  }
+
+  onInterStateChange(): void {
+    // Update tax rates for all existing items when inter-state selection changes
+    for (let i = 0; i < this.invoiceItemsArray.length; i++) {
+      const item = this.invoiceItemsArray.at(i) as FormGroup;
+      this.setDefaultTaxRates(item);
+      this.calculateTaxes(i);
     }
   }
 
@@ -243,6 +291,11 @@ export class InvoiceFormComponent implements OnInit {
     this.loading = true;
     this.invoiceService.getInvoiceById(id).subscribe({
       next: (invoice: any) => {
+        this.loadedInvoice = invoice;
+        this.invoiceLoaded = true;
+        if (this.companiesLoaded) {
+          this.ensureCompanyInListAndPatch(invoice);
+        }
         this.populateForm(invoice);
         this.loading = false;
       },
@@ -254,9 +307,45 @@ export class InvoiceFormComponent implements OnInit {
     });
   }
 
+  ensureCompanyInListAndPatch(invoice: InvoiceResponse): void {
+    const companyId = invoice.company?.id;
+    if (!companyId) {
+      console.warn('No companyId found in invoice data');
+      return;
+    }
+
+    const existingCompany = this.companies.find(c => c.id === companyId);
+
+    if (!existingCompany) {
+      // Company not found in list, add it temporarily for display
+      const tempCompany: CompanyResponse = {
+        id: companyId,
+        companyName: invoice.company?.companyName || 'Unknown Company',
+        gstin: invoice.company?.gstin || '',
+        pan: invoice.company?.pan || '',
+        addressLine1: invoice.company?.addressLine1 || '',
+        addressLine2: invoice.company?.addressLine2 || '',
+        city: invoice.company?.city || '',
+        state: invoice.company?.state || '',
+        stateCode: '', // We don't have stateCode in the backend response, so provide default
+        pincode: invoice.company?.pincode || '',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      this.companies = [tempCompany, ...this.companies];
+      console.log('Added missing company to list:', tempCompany);
+    }
+
+    // Always patch the form with the companyId from invoice
+    this.invoiceForm.get('companyId')?.setValue(companyId);
+    console.log('Patched companyId:', companyId);
+  }
+
   populateForm(invoice: InvoiceResponse): void {
     this.invoiceForm.patchValue({
-      customerId: invoice.customerInfo.id,
+      companyId: invoice.company?.id || '',
+      customerId: invoice.customer?.id || '',
       invoiceNumber: invoice.invoiceNumber,
       invoiceDate: invoice.invoiceDate,
       invoiceType: invoice.invoiceType,
@@ -268,41 +357,87 @@ export class InvoiceFormComponent implements OnInit {
       paymentType: invoice.paymentType,
       dueDate: invoice.dueDate,
       notes: invoice.notes,
-      termsAndConditions: invoice.termsAndConditions
+      termsAndConditions: invoice.termsConditions,
+      cgstAmount: invoice.cgstAmount,
+      sgstAmount: invoice.sgstAmount,
+      igstAmount: invoice.igstAmount,
+      cessAmount: invoice.cessAmount,
+      roundOff: invoice.roundOff,
+      totalTaxableAmount: invoice.totalTaxableAmount,
+      totalDiscountAmount: invoice.totalDiscountAmount,
+      totalInvoiceAmount: invoice.totalInvoiceAmount,
+      paidAmount: invoice.paidAmount,
+      balanceAmount: invoice.balanceAmount,
+      transportDetails: invoice.transportDetails,
+      vehicleNumber: invoice.vehicleNumber,
+      ewayBillNumber: invoice.ewayBillNumber,
+      currency: invoice.currency,
+      exchangeRate: invoice.exchangeRate,
+      baseCurrencyAmount: invoice.baseCurrencyAmount,
+      einvoiceIrn: invoice.einvoiceIrn,
+      einvoiceAckNo: invoice.einvoiceAckNo,
+      approvalStatus: invoice.approvalStatus,
+      isRecurring: invoice.isRecurring,
+      recurringFrequency: invoice.recurringFrequency,
+      recurringParentId: invoice.recurringParentId,
+      nextInvoiceDate: invoice.nextInvoiceDate,
+      salesPersonId: invoice.salesPersonId,
+      salesChannel: invoice.salesChannel,
+      orderReference: invoice.orderReference,
+      shippingAddress: invoice.shippingAddress,
+      shippingCost: invoice.shippingCost,
+      shippingTrackingNumber: invoice.shippingTrackingNumber,
+      expectedDeliveryDate: invoice.expectedDeliveryDate,
+      customFields: invoice.customFields
     });
-
     // Populate invoice items
     this.invoiceItemsArray.clear();
     invoice.invoiceItems.forEach(item => {
       const itemForm = this.createInvoiceItemForm();
+      // Calculate tax rates from amounts (since backend doesn't provide rates)
+      const cgstRate = item.taxableAmount > 0 ? (item.cgstAmount / item.taxableAmount) * 100 : 0;
+      const sgstRate = item.taxableAmount > 0 ? (item.sgstAmount / item.taxableAmount) * 100 : 0;
+      const igstRate = item.taxableAmount > 0 ? (item.igstAmount / item.taxableAmount) * 100 : 0;
+
       itemForm.patchValue({
-        productId: item.productInfo.id,
-        description: item.description,
+        productId: item.productId,
+        description: item.itemDescription,
         hsnCode: item.hsnCode,
         quantity: item.quantity,
         unit: item.unit,
         rate: item.rate,
-        amount: item.amount,
-        discountPercentage: item.discountPercentage,
+        amount: item.quantity * item.rate,
         discountAmount: item.discountAmount,
         taxableAmount: item.taxableAmount,
-        cgstRate: item.cgstRate,
+        cgstRate: Math.round(cgstRate * 100) / 100, // Round to 2 decimal places
         cgstAmount: item.cgstAmount,
-        sgstRate: item.sgstRate,
+        sgstRate: Math.round(sgstRate * 100) / 100,
         sgstAmount: item.sgstAmount,
-        igstRate: item.igstRate,
+        igstRate: Math.round(igstRate * 100) / 100,
         igstAmount: item.igstAmount,
-        cessRate: item.cessRate,
+        cessRate: item.cessRate || 0,
         cessAmount: item.cessAmount,
         totalAmount: item.totalAmount
       });
       this.invoiceItemsArray.push(itemForm);
     });
+
+    // Ensure companyId is properly set after form population
+    if (invoice.company?.id) {
+      this.invoiceForm.get('companyId')?.setValue(invoice.company.id);
+      console.log('Final companyId patch after form population:', invoice.company.id);
+    }
+
+    // DO NOT disable the form, just use [readonly] in template for viewOnly
+    // if (this.viewOnly) {
+    //   this.invoiceForm.disable();
+    // }
   }
 
   onSubmit(): void {
     if (this.invoiceForm.invalid) {
       this.markFormGroupTouched(this.invoiceForm);
+      console.error('Form is invalid. Errors:', this.invoiceForm.errors);
       return;
     }
 
@@ -312,20 +447,60 @@ export class InvoiceFormComponent implements OnInit {
     // Calculate totals before submitting
     this.calculateTotals();
 
-    // TODO: Replace this with actual companyId selection or retrieval logic
-    // For now, set a default or hardcoded companyId (should be dynamic in real app)
+    // Get companyId with fallback
     const companyId = this.getCompanyIdForInvoice();
 
     const totalAmount = this.calculateTotalAmount();
+    const totalTaxableAmount = this.calculateTotalTaxableAmount();
+
+    // Map invoice items to match backend DTO
+    const mappedInvoiceItems = formValue.invoiceItems.map((item: any) => ({
+      productId: item.productId,
+      itemDescription: item.description, // Backend expects 'itemDescription', not 'description'
+      quantity: item.quantity,
+      unit: item.unit,
+      rate: item.rate,
+      discountAmount: item.discountAmount || 0,
+      taxableAmount: item.taxableAmount,
+      cgstAmount: item.cgstAmount || 0,
+      sgstAmount: item.sgstAmount || 0,
+      igstAmount: item.igstAmount || 0,
+      cessRate: item.cessRate || 0,
+      cessAmount: item.cessAmount || 0,
+      totalAmount: item.totalAmount,
+      hsnCode: item.hsnCode || null
+    }));
+
+    // Calculate aggregated tax amounts from all items
+    const aggregatedTaxes = this.calculateAggregatedTaxes();
 
     const request: InvoiceRequest = {
-      ...formValue,
       companyId, // Ensure companyId is sent
-      totalTaxableAmount: this.calculateTotalTaxableAmount(),
-      totalAmount: totalAmount,
-      totalInvoiceAmount: totalAmount, // Ensure this is sent to backend
-      grandTotal: this.calculateGrandTotal()
+      customerId: formValue.customerId,
+      invoiceNumber: formValue.invoiceNumber,
+      invoiceDate: formValue.invoiceDate,
+      invoiceType: formValue.invoiceType,
+      financialYear: formValue.financialYear,
+      placeOfSupply: formValue.placeOfSupply,
+      placeOfSupplyStateCode: formValue.placeOfSupplyStateCode,
+      isInterState: formValue.isInterState,
+      reverseChargeApplicable: formValue.reverseChargeApplicable,
+      paymentType: formValue.paymentType,
+      dueDate: formValue.dueDate || null,
+      notes: formValue.notes || null,
+      termsConditions: formValue.termsAndConditions || null, // Backend expects 'termsConditions'
+      totalTaxableAmount: totalTaxableAmount,
+      totalDiscountAmount: this.calculateTotalDiscountAmount(),
+      cgstAmount: aggregatedTaxes.cgst,
+      sgstAmount: aggregatedTaxes.sgst,
+      igstAmount: aggregatedTaxes.igst,
+      cessAmount: aggregatedTaxes.cess,
+      totalInvoiceAmount: totalAmount,
+      invoiceItems: mappedInvoiceItems
     };
+
+    console.log('Submitting invoice request with companyId:', companyId);
+    console.log('Full request payload:', request);
 
     const operation = this.isEditMode && this.invoiceId
       ? this.invoiceService.updateInvoice(this.invoiceId, request)
@@ -347,7 +522,18 @@ export class InvoiceFormComponent implements OnInit {
 
   // Add this helper to get companyId (replace with real logic as needed)
   private getCompanyIdForInvoice(): string {
-    return this.invoiceForm.get('companyId')?.value || '';
+    const controlValue = this.invoiceForm.get('companyId')?.value;
+    if (controlValue) {
+      console.log('Using companyId from form control:', controlValue);
+      return controlValue;
+    }
+    // Fallback to first company if form control is empty
+    if (this.companies && this.companies.length > 0) {
+      console.warn('companyId was empty, falling back to first company:', this.companies[0].id);
+      return this.companies[0].id;
+    }
+    console.error('No companyId found and no companies available!');
+    return '';
   }
 
   onCancel(): void {
@@ -397,6 +583,23 @@ export class InvoiceFormComponent implements OnInit {
     return this.invoiceItemsArray.controls.reduce((total, item) => {
       return total + (item.get('totalAmount')?.value || 0);
     }, 0);
+  }
+
+  private calculateTotalDiscountAmount(): number {
+    return this.invoiceItemsArray.controls.reduce((total, item) => {
+      return total + (item.get('discountAmount')?.value || 0);
+    }, 0);
+  }
+
+  private calculateAggregatedTaxes(): { cgst: number, sgst: number, igst: number, cess: number } {
+    return this.invoiceItemsArray.controls.reduce((totals, item) => {
+      return {
+        cgst: totals.cgst + (item.get('cgstAmount')?.value || 0),
+        sgst: totals.sgst + (item.get('sgstAmount')?.value || 0),
+        igst: totals.igst + (item.get('igstAmount')?.value || 0),
+        cess: totals.cess + (item.get('cessAmount')?.value || 0)
+      };
+    }, { cgst: 0, sgst: 0, igst: 0, cess: 0 });
   }
 
   private calculateGrandTotal(): number {

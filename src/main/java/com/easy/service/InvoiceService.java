@@ -6,6 +6,8 @@ import com.easy.dto.InvoiceResponse;
 import com.easy.entity.CompanyMaster;
 import com.easy.entity.Customer;
 import com.easy.entity.InvoiceMaster;
+import com.easy.repository.CompanyRepository;
+import com.easy.repository.CustomerRepository;
 import com.easy.repository.InvoiceRepository;
 import com.easy.repository.InvoiceItemsRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,13 +39,17 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceItemsRepository invoiceItemsRepository;
     private final InvoiceMapper invoiceMapper;
-    // TODO: Add CompanyRepository and CustomerRepository when available
-    // private final CompanyRepository companyRepository;
-    // private final CustomerRepository customerRepository;
+    private final CompanyRepository companyRepository;
+    private final CustomerRepository customerRepository;
 
     @Transactional
     public InvoiceResponse createInvoice(InvoiceRequest request) {
         log.info("Creating new invoice with number: {}", request.getInvoiceNumber());
+
+        // Validate companyId is provided
+        if (request.getCompanyId() == null) {
+            throw new IllegalArgumentException("Company ID is required");
+        }
 
         // Validate unique invoice number
         if (invoiceRepository.findByInvoiceNumber(request.getInvoiceNumber()).isPresent()) {
@@ -57,13 +63,13 @@ public class InvoiceService {
 
         InvoiceMaster invoice = invoiceMapper.toEntity(request);
 
-        // Set company and customer (placeholder - implement when repositories are available)
-        // Company company = companyRepository.findById(request.getCompanyId())
-        //     .orElseThrow(() -> new EntityNotFoundException("Company not found"));
-        // Customer customer = customerRepository.findById(request.getCustomerId())
-        //     .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
-        // invoice.setCompany(company);
-        // invoice.setCustomer(customer);
+        // Set company and customer
+        CompanyMaster company = companyRepository.findById(request.getCompanyId())
+            .orElseThrow(() -> new EntityNotFoundException("Company not found with ID: " + request.getCompanyId()));
+        Customer customer = customerRepository.findById(request.getCustomerId())
+            .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + request.getCustomerId()));
+        invoice.setCompany(company);
+        invoice.setCustomer(customer);
 
         // Set audit fields
         invoice.setCreatedBy(getCurrentUserId()); // Implement getCurrentUserId()
@@ -89,6 +95,11 @@ public class InvoiceService {
         InvoiceMaster existingInvoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Invoice not found with ID: " + id));
 
+        // Validate companyId is provided
+        if (request.getCompanyId() == null) {
+            throw new IllegalArgumentException("Company ID is required");
+        }
+
         // Check if invoice number is being changed and if it's unique
         if (!existingInvoice.getInvoiceNumber().equals(request.getInvoiceNumber())) {
             Optional<InvoiceMaster> duplicateInvoice = invoiceRepository.findByInvoiceNumber(request.getInvoiceNumber());
@@ -105,6 +116,20 @@ public class InvoiceService {
         // Validate invoice items
         if (request.getInvoiceItems() == null || request.getInvoiceItems().isEmpty()) {
             throw new IllegalArgumentException("Invoice must contain at least one item");
+        }
+
+        // Update company if changed
+        if (!existingInvoice.getCompany().getId().equals(request.getCompanyId())) {
+            CompanyMaster company = companyRepository.findById(request.getCompanyId())
+                .orElseThrow(() -> new EntityNotFoundException("Company not found with ID: " + request.getCompanyId()));
+            existingInvoice.setCompany(company);
+        }
+
+        // Update customer if changed
+        if (!existingInvoice.getCustomer().getId().equals(request.getCustomerId())) {
+            Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + request.getCustomerId()));
+            existingInvoice.setCustomer(customer);
         }
 
         invoiceMapper.updateEntityFromRequest(existingInvoice, request);

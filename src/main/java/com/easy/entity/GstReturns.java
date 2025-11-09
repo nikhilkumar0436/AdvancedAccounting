@@ -71,7 +71,7 @@ public class GstReturns extends Auditable {
     private String arnNumber; // Acknowledgement Reference Number
 
     // Export data
-    @Column(name = "export_data", columnDefinition = "jsonb")
+    @Column(name = "export_data")
     private String exportData; // Complete GSTR data in JSON format
 
     // Future enhancements: Amendments and revisions

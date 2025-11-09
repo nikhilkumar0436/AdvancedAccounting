@@ -42,6 +42,7 @@
               formControlName="invoiceNumber"
               [class.is-invalid]="isFieldInvalid('invoiceNumber')"
               placeholder="INV-001"
+              [readonly]="viewOnly"
             />
             <div *ngIf="isFieldInvalid('invoiceNumber')" class="invalid-feedback">
               {{ getFieldError('invoiceNumber') }}
@@ -58,6 +59,7 @@
               class="form-control"
               formControlName="invoiceDate"
               [class.is-invalid]="isFieldInvalid('invoiceDate')"
+              [readonly]="viewOnly"
             />
             <div *ngIf="isFieldInvalid('invoiceDate')" class="invalid-feedback">
               {{ getFieldError('invoiceDate') }}
@@ -73,6 +75,7 @@
               id="dueDate"
               class="form-control"
               formControlName="dueDate"
+              [readonly]="viewOnly"
             />
           </div>
         </div>
@@ -87,6 +90,7 @@
               class="form-control"
               formControlName="invoiceType"
               [class.is-invalid]="isFieldInvalid('invoiceType')"
+              [disabled]="viewOnly"
             >
               <option *ngFor="let type of invoiceTypes" [value]="type">{{ type }}</option>
             </select>
@@ -104,6 +108,7 @@
               class="form-control"
               formControlName="paymentType"
               [class.is-invalid]="isFieldInvalid('paymentType')"
+              [disabled]="viewOnly"
             >
               <option *ngFor="let type of paymentTypes" [value]="type">{{ type }}</option>
             </select>
@@ -123,6 +128,7 @@
               formControlName="financialYear"
               [class.is-invalid]="isFieldInvalid('financialYear')"
               placeholder="2024-2025"
+              [readonly]="viewOnly"
             />
             <div *ngIf="isFieldInvalid('financialYear')" class="invalid-feedback">
               {{ getFieldError('financialYear') }}
@@ -138,6 +144,7 @@
               class="form-control"
               formControlName="customerId"
               [class.is-invalid]="isFieldInvalid('customerId')"
+              [disabled]="viewOnly"
             >
               <option value="">Select Customer</option>
               <option *ngFor="let customer of customers" [value]="customer.id">
@@ -158,8 +165,9 @@
               class="form-control"
               formControlName="companyId"
               required
-              [disabled]="companies.length === 1"
+              [disabled]="viewOnly"
             >
+              <option value="">Select Company</option>
               <option *ngFor="let company of companies" [value]="company.id">
                 {{ company.companyName }}
               </option>
@@ -186,6 +194,7 @@
               formControlName="placeOfSupply"
               [class.is-invalid]="isFieldInvalid('placeOfSupply')"
               placeholder="State Name"
+              [readonly]="viewOnly"
             />
             <div *ngIf="isFieldInvalid('placeOfSupply')" class="invalid-feedback">
               {{ getFieldError('placeOfSupply') }}
@@ -204,6 +213,7 @@
               [class.is-invalid]="isFieldInvalid('placeOfSupplyStateCode')"
               placeholder="27"
               maxlength="2"
+              [readonly]="viewOnly"
             />
             <div *ngIf="isFieldInvalid('placeOfSupplyStateCode')" class="invalid-feedback">
               {{ getFieldError('placeOfSupplyStateCode') }}
@@ -219,6 +229,8 @@
                 id="isInterState"
                 class="form-check-input"
                 formControlName="isInterState"
+                [disabled]="viewOnly"
+                (change)="onInterStateChange()"
               />
               <label for="isInterState" class="form-check-label">Inter-State Supply</label>
             </div>
@@ -229,6 +241,7 @@
                 id="reverseChargeApplicable"
                 class="form-check-input"
                 formControlName="reverseChargeApplicable"
+                [disabled]="viewOnly"
               />
               <label for="reverseChargeApplicable" class="form-check-label">Reverse Charge Applicable</label>
             </div>
@@ -241,7 +254,7 @@
     <div class="form-section">
       <h4 class="section-title">
         Invoice Items
-        <button type="button" class="btn btn-sm btn-success ml-2" (click)="addInvoiceItem()">
+        <button type="button" class="btn btn-sm btn-success ml-2" (click)="addInvoiceItem()" [disabled]="viewOnly">
           <i class="fa fa-plus"></i> Add Item
         </button>
       </h4>
@@ -252,7 +265,7 @@
              class="invoice-item">
           <div class="item-header">
             <h6>Item {{ i + 1 }}</h6>
-            <button type="button" class="btn btn-sm btn-danger" (click)="removeInvoiceItem(i)">
+            <button type="button" class="btn btn-sm btn-danger" (click)="removeInvoiceItem(i)" [disabled]="viewOnly">
               <i class="fa fa-trash"></i> Remove
             </button>
           </div>
@@ -264,7 +277,9 @@
                 <select
                   class="form-control"
                   formControlName="productId"
-                  (change)="onProductSelected(i, $any($event.target).value)">
+                  (change)="onProductSelected(i, $any($event.target).value)"
+                  [disabled]="viewOnly"
+                >
                   <option value="">Select Product</option>
                   <option *ngFor="let product of products" [value]="product.id">
                     {{ product.productName }}
@@ -276,7 +291,7 @@
             <div class="col-md-8">
               <div class="form-group">
                 <label>Description:</label>
-                <input type="text" class="form-control" formControlName="description" />
+                <input type="text" class="form-control" formControlName="description" [readonly]="viewOnly" />
               </div>
             </div>
           </div>
@@ -285,14 +300,14 @@
             <div class="col-md-2">
               <div class="form-group">
                 <label>HSN Code:</label>
-                <input type="text" class="form-control" formControlName="hsnCode" />
+                <input type="text" class="form-control" formControlName="hsnCode" [readonly]="viewOnly" />
               </div>
             </div>
 
             <div class="col-md-2">
               <div class="form-group">
                 <label>Unit:</label>
-                <input type="text" class="form-control" formControlName="unit" />
+                <input type="text" class="form-control" formControlName="unit" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -300,7 +315,7 @@
               <div class="form-group">
                 <label>Quantity:</label>
                 <input type="number" class="form-control" formControlName="quantity"
-                       (blur)="calculateItemAmount(i)" />
+                       (blur)="calculateItemAmount(i)" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -308,7 +323,7 @@
               <div class="form-group">
                 <label>Rate:</label>
                 <input type="number" class="form-control" formControlName="rate"
-                       (blur)="calculateItemAmount(i)" />
+                       (blur)="calculateItemAmount(i)" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -316,7 +331,7 @@
               <div class="form-group">
                 <label>Discount %:</label>
                 <input type="number" class="form-control" formControlName="discountPercentage"
-                       (blur)="calculateItemAmount(i)" />
+                       (blur)="calculateItemAmount(i)" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -333,7 +348,7 @@
               <div class="form-group">
                 <label>CGST %:</label>
                 <input type="number" class="form-control" formControlName="cgstRate"
-                       (blur)="calculateTaxes(i)" />
+                       (blur)="calculateTaxes(i)" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -341,7 +356,7 @@
               <div class="form-group">
                 <label>SGST %:</label>
                 <input type="number" class="form-control" formControlName="sgstRate"
-                       (blur)="calculateTaxes(i)" />
+                       (blur)="calculateTaxes(i)" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -349,7 +364,7 @@
               <div class="form-group">
                 <label>IGST %:</label>
                 <input type="number" class="form-control" formControlName="igstRate"
-                       (blur)="calculateTaxes(i)" />
+                       (blur)="calculateTaxes(i)" [readonly]="viewOnly" />
               </div>
             </div>
 
@@ -388,6 +403,7 @@
               formControlName="notes"
               rows="3"
               placeholder="Any additional notes..."
+              [readonly]="viewOnly"
             ></textarea>
           </div>
         </div>
@@ -399,8 +415,7 @@
               id="termsAndConditions"
               class="form-control"
               formControlName="termsAndConditions"
-              rows="3"
-              placeholder="Terms and conditions..."
+              [readonly]="viewOnly"
             ></textarea>
           </div>
         </div>
@@ -409,19 +424,10 @@
 
     <!-- Form Actions -->
     <div class="form-actions">
-      <button
-        type="submit"
-        class="btn btn-primary"
-        [disabled]="submitting || !isFormReadyToSubmit()">
-        <span *ngIf="submitting" class="spinner-border spinner-border-sm mr-2"></span>
+      <button type="submit" class="btn btn-primary" [disabled]="viewOnly || submitting || !isFormReadyToSubmit()">
         {{ isEditMode ? 'Update Invoice' : 'Create Invoice' }}
       </button>
-
-      <button
-        type="button"
-        class="btn btn-secondary ml-2"
-        (click)="onCancel()"
-        [disabled]="submitting">
+      <button type="button" class="btn btn-secondary ml-2" (click)="onCancel()" [disabled]="submitting">
         Cancel
       </button>
 

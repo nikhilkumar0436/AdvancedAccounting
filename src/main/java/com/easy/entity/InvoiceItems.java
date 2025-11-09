@@ -100,7 +100,7 @@ public class InvoiceItems extends Auditable {
     @Column(name = "item_notes")
     private String itemNotes;
 
-    @Column(name = "custom_fields", columnDefinition = "jsonb")
+    @Column(name = "custom_fields")
     private String customFields;
 
     // Unique constraint on invoice_id and item_sequence is handled at database level

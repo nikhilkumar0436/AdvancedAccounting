@@ -149,9 +149,9 @@
           </td>
           <td>{{ invoice.invoiceDate | date:'dd/MM/yyyy' }}</td>
           <td>
-            <div>{{ invoice.customerInfo.customerName }}</div>
-            <div class="small text-muted" *ngIf="invoice.customerInfo.gstin">
-              GSTIN: {{ invoice.customerInfo.gstin }}
+            <div>{{ invoice.customer.customerName }}</div>
+            <div class="small text-muted" *ngIf="invoice.customer.gstin">
+              GSTIN: {{ invoice.customer.gstin }}
             </div>
           </td>
           <td>
@@ -165,7 +165,7 @@
             </span>
           </td>
           <td>
-            <strong>₹{{ invoice.grandTotal | number:'1.2-2' }}</strong>
+            <strong>₹{{ invoice.totalInvoiceAmount | number:'1.2-2' }}</strong>
             <div class="small text-muted">
               Taxable: ₹{{ invoice.totalTaxableAmount | number:'1.2-2' }}
             </div>

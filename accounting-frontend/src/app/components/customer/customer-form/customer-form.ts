@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CustomerService } from '../../../services/customer.service';
-import { CompanyService } from '../../../services/company.service';
+import { CompanyContextService } from '../../../services/company-context.service';
 import {
   CustomerRequest,
   CustomerResponse,
@@ -22,8 +22,7 @@ export class CustomerFormComponent implements OnInit {
   customerForm: FormGroup;
   isEditMode: boolean = false;
   customerId: string | null = null;
-  companies: CompanyResponse[] = [];
-  loadingCompanies: boolean = false;
+  selectedCompany: CompanyResponse | null = null;
   loading: boolean = false;
   submitting: boolean = false;
 
@@ -33,7 +32,7 @@ export class CustomerFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private customerService: CustomerService,
-    private companyService: CompanyService,
+    private companyContextService: CompanyContextService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -44,7 +43,15 @@ export class CustomerFormComponent implements OnInit {
     this.customerId = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.customerId;
 
-    this.loadCompanies();
+    // Get selected company from context
+    this.selectedCompany = this.companyContextService.getSelectedCompany();
+
+    // Auto-set company ID in form if available
+    if (this.selectedCompany && !this.isEditMode) {
+      this.customerForm.patchValue({
+        companyId: this.selectedCompany.id
+      });
+    }
 
     if (this.isEditMode && this.customerId) {
       this.loadCustomer(this.customerId);
@@ -134,20 +141,7 @@ export class CustomerFormComponent implements OnInit {
     });
   }
 
-  loadCompanies(): void {
-    this.loadingCompanies = true;
-    this.companyService.getAllActiveCompanies().subscribe({
-      next: (companies: CompanyResponse[]) => {
-        this.companies = companies;
-        this.loadingCompanies = false;
-      },
-      error: (error: any) => {
-        console.error('Error loading companies:', error);
-        this.loadingCompanies = false;
-        alert('Error loading companies. Please try again.');
-      }
-    });
-  }
+
 
   populateForm(customer: CustomerResponse): void {
     this.customerForm.patchValue({

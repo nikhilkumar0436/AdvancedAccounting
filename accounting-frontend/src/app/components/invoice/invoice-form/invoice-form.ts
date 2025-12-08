@@ -6,6 +6,7 @@ import { InvoiceService } from '../../../services/invoice.service';
 import { CustomerService } from '../../../services/customer.service';
 import { ProductService } from '../../../services/product.service';
 import { CompanyService } from '../../../services/company.service';
+import { AuthService } from '../../../services/auth.service';
 import {
   InvoiceRequest,
   InvoiceResponse,
@@ -47,6 +48,7 @@ export class InvoiceFormComponent implements OnInit {
     private invoiceService: InvoiceService,
     private customerService: CustomerService,
     private productService: ProductService,
+    private authService: AuthService,
     private companyService: CompanyService,
     private route: ActivatedRoute,
     private router: Router
@@ -157,21 +159,34 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   loadCompanies(callback?: () => void): void {
-    this.companyService.getAllActiveCompanies().subscribe({
-      next: (companies: CompanyResponse[]) => {
-        this.companies = companies;
-        // Only auto-select first company if NOT in edit mode and companyId is empty
-        if (!this.isEditMode && companies.length > 0 && !this.invoiceForm.get('companyId')?.value) {
-          this.invoiceForm.get('companyId')?.setValue(companies[0].id);
-          console.log('Auto-selected company:', companies[0].id, companies[0].companyName);
-        }
-        if (callback) callback();
-      },
-      error: (error: any) => {
-        console.error('Error loading companies:', error);
-        if (callback) callback();
+    // Get selected company from auth service
+    const selectedCompany = this.authService.getSelectedCompany();
+
+    if (selectedCompany) {
+      this.companies = [selectedCompany];
+
+      // Auto-set the selected company for new invoices
+      if (!this.isEditMode && !this.invoiceForm.get('companyId')?.value) {
+        this.invoiceForm.get('companyId')?.setValue(selectedCompany.id);
+        console.log('Auto-selected company from auth:', selectedCompany.id, selectedCompany.companyName);
       }
-    });
+    } else {
+      // Fallback to loading all companies if no company selected
+      this.companyService.getAllActiveCompanies().subscribe({
+        next: (companies: CompanyResponse[]) => {
+          this.companies = companies;
+          if (!this.isEditMode && companies.length > 0 && !this.invoiceForm.get('companyId')?.value) {
+            this.invoiceForm.get('companyId')?.setValue(companies[0].id);
+            console.log('Auto-selected company:', companies[0].id, companies[0].companyName);
+          }
+        },
+        error: (error: any) => {
+          console.error('Error loading companies:', error);
+        }
+      });
+    }
+
+    if (callback) callback();
   }
 
   loadCustomers(): void {

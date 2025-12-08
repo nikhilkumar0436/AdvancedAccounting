@@ -25,22 +25,19 @@
       <div class="row">
         <div class="col-md-4">
           <div class="form-group">
-            <label for="companyId" class="required">Company:</label>
-            <select
-              id="companyId"
-              class="form-control"
-              formControlName="companyId"
-              [class.is-invalid]="isFieldInvalid('companyId')"
-              [disabled]="loadingCompanies"
-            >
-              <option value="">Select a company</option>
-              <option *ngFor="let company of companies" [value]="company.id">
-                {{ company.companyName }} ({{ company.gstin }})
-              </option>
-            </select>
-            <div *ngIf="loadingCompanies" class="text-muted small">Loading companies...</div>
-            <div *ngIf="isFieldInvalid('companyId')" class="invalid-feedback">
-              {{ getFieldError('companyId') }}
+            <label class="form-label">Company</label>
+            <div class="company-info-display" *ngIf="selectedCompany">
+              <div class="company-card">
+                <i class="fa fa-building text-primary"></i>
+                <div class="company-details">
+                  <strong>{{ selectedCompany.companyName }}</strong>
+                  <small class="text-muted d-block">{{ selectedCompany.city }}, {{ selectedCompany.state }}</small>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-warning" *ngIf="!selectedCompany">
+              <i class="fa fa-exclamation-triangle"></i>
+              No company selected. Please go to <a routerLink="/select-company">company selection</a>.
             </div>
           </div>
         </div>

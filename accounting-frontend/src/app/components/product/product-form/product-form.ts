@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ProductService } from '../../../services/product.service';
-import { CompanyService } from '../../../services/company.service';
+import { CompanyContextService } from '../../../services/company-context.service';
 import { ProductRequest, ProductType } from '../../../models/product.model';
 import { CompanyResponse } from '../../../models/company.model';
 
@@ -18,15 +18,13 @@ export class ProductFormComponent implements OnInit {
   isEditMode = false;
   productId?: string;
   loading = false;
-  companies: CompanyResponse[] = [];
-  loadingCompanies: boolean = false;
-
+  selectedCompany: CompanyResponse | null = null;
   productTypes = Object.values(ProductType);
 
   constructor(
     private fb: FormBuilder,
     private productService: ProductService,
-    private companyService: CompanyService,
+    private companyContextService: CompanyContextService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -37,7 +35,15 @@ export class ProductFormComponent implements OnInit {
     this.productId = this.route.snapshot.params['id'];
     this.isEditMode = !!this.productId;
 
-    this.loadCompanies();
+    // Get selected company from context
+    this.selectedCompany = this.companyContextService.getSelectedCompany();
+
+    // Auto-set company ID in form if available
+    if (this.selectedCompany && !this.isEditMode) {
+      this.productForm.patchValue({
+        companyId: this.selectedCompany.id
+      });
+    }
 
     if (this.isEditMode && this.productId) {
       this.loadProduct(this.productId);
@@ -174,18 +180,5 @@ export class ProductFormComponent implements OnInit {
     return '';
   }
 
-  loadCompanies(): void {
-    this.loadingCompanies = true;
-    this.companyService.getAllActiveCompanies().subscribe({
-      next: (companies: CompanyResponse[]) => {
-        this.companies = companies;
-        this.loadingCompanies = false;
-      },
-      error: (error: any) => {
-        console.error('Error loading companies:', error);
-        this.loadingCompanies = false;
-        alert('Error loading companies. Please try again.');
-      }
-    });
-  }
+
 }

@@ -48,31 +48,17 @@ export class CustomerListComponent implements OnInit {
   loadCustomers(): void {
     this.loading = true;
 
-    const filter: CustomerFilter = {};
-    if (this.searchTerm) filter.customerName = this.searchTerm;
-    if (this.filterCity) filter.city = this.filterCity;
-    if (this.filterState) filter.state = this.filterState;
-    if (this.filterCustomerType) filter.customerType = this.filterCustomerType as CustomerType;
-    if (this.filterIsActive !== '') filter.isActive = this.filterIsActive as boolean;
-    if (this.filterIsGstRegistered !== '') filter.isGstRegistered = this.filterIsGstRegistered as boolean;
-
-    const request: CustomRequest = {
-      page: this.currentPage,
-      size: this.pageSize,
-      sortBy: this.sortBy,
-      sortDirection: this.sortDirection,
-      filters: filter
-    };
-
-    this.customerService.searchCustomers(request).subscribe({
-      next: (customers: Customer[]) => {
-        this.customers = customers;
-        this.totalElements = customers.length;
-        this.totalPages = Math.ceil(customers.length / this.pageSize);
+    // use flat list endpoint to avoid mixed shapes
+    this.customerService.getCustomersList().subscribe({
+      next: (customerArray: Customer[]) => {
+        console.log('Flat customers list from API:', customerArray);
+        this.customers = customerArray || [];
+        this.totalElements = this.customers.length;
+        this.totalPages = Math.max(1, Math.ceil(this.totalElements / this.pageSize));
         this.loading = false;
       },
       error: (error: any) => {
-        console.error('Error loading customers:', error);
+        console.error('Error loading customers list:', error);
         this.loading = false;
       }
     });

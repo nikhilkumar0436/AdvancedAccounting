@@ -1,6 +1,9 @@
 package com.easy.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -13,6 +16,8 @@ import java.util.UUID;
 @Table(name = "customers")
 @Data
 @EntityListeners(AuditingEntityListener.class)
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Customer extends Auditable {
     
     @Id
@@ -22,7 +27,6 @@ public class Customer extends Auditable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = true)
-    @JsonIgnore
     private CompanyMaster company;
 
     @Column(name = "customer_name", nullable = false, length = 255)

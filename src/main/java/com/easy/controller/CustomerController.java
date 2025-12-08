@@ -227,4 +227,19 @@ public class CustomerController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/list")
+    @Operation(summary = "Get customers list for UI", description = "Retrieve a simple list of customers for the given company (no pagination).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Customers retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Company not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<List<CustomerResponse>> getCustomersList(@Parameter(description = "Company ID via query param", required = true) @RequestParam UUID companyId) {
+        log.info("Fetching customers list for company ID: {}", companyId);
+        List<CustomerResponse> customers = customerService.getCustomerResponsesByCompany(companyId);
+        log.info("Returning {} customers in flat list", customers.size());
+        return ResponseEntity.ok(customers);
+    }
 }

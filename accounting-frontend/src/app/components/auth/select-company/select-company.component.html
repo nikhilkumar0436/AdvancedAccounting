@@ -1,0 +1,80 @@
+<div class="select-company-container">
+  <div class="company-selection-card">
+    <div class="card-header">
+      <div class="user-info">
+        <h2>Welcome, {{ user?.firstName }} {{ user?.lastName }}</h2>
+        <p class="text-muted">Please select a company to continue</p>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" (click)="logout()">
+        <i class="fa fa-sign-out"></i> Logout
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-border" role="status">
+        <span class="sr-only">Loading companies...</span>
+      </div>
+      <p class="text-muted mt-3">Loading available companies...</p>
+    </div>
+
+    <div *ngIf="!loading" class="companies-grid">
+      <div
+        *ngFor="let company of companies"
+        class="company-card"
+        [class.selected]="isSelected(company)"
+        (click)="selectCompany(company)"
+      >
+        <div class="company-icon">
+          <i class="fa fa-building"></i>
+        </div>
+
+        <div class="company-info">
+          <h4>{{ company.companyName }}</h4>
+          <div class="company-details">
+            <div class="detail-item" *ngIf="company.gstin">
+              <i class="fa fa-file-text"></i>
+              <span>GSTIN: {{ company.gstin }}</span>
+            </div>
+            <div class="detail-item" *ngIf="company.city">
+              <i class="fa fa-map-marker"></i>
+              <span>{{ company.city }}, {{ company.state }}</span>
+            </div>
+            <div class="detail-item" *ngIf="company.pan">
+              <i class="fa fa-id-card"></i>
+              <span>PAN: {{ company.pan }}</span>
+            </div>
+            <div class="detail-item" *ngIf="company.pincode">
+              <i class="fa fa-map-pin"></i>
+              <span>{{ company.pincode }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="selection-indicator" *ngIf="isSelected(company)">
+          <i class="fa fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" *ngIf="selectedCompany">
+      <div class="selected-info">
+        <i class="fa fa-info-circle"></i>
+        <span>Selected: <strong>{{ selectedCompany.companyName }}</strong></span>
+      </div>
+
+      <button
+        class="btn btn-primary btn-lg"
+        (click)="confirmSelection()"
+        [disabled]="loading"
+      >
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+        {{ loading ? 'Setting up...' : 'Continue to Dashboard' }}
+        <i *ngIf="!loading" class="fa fa-arrow-right ms-2"></i>
+      </button>
+    </div>
+
+    <div class="no-selection" *ngIf="!selectedCompany">
+      <p class="text-muted">Click on a company card to select it</p>
+    </div>
+  </div>
+</div>

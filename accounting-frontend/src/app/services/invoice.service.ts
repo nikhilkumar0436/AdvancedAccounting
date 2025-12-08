@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -9,29 +10,33 @@ import { environment } from '../../environments/environment';
 export class InvoiceService {
   private readonly baseUrl = `${environment.apiUrl}/invoices`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiService: ApiService
+  ) {}
 
-  // Create a new invoice
+  // Create a new invoice (company-aware)
   createInvoice(request: any): Observable<any> {
-    return this.http.post<any>(this.baseUrl, request);
+    return this.apiService.post<any>('/invoices', request);
   }
 
-  // Update an existing invoice
+  // Update an existing invoice (company-aware)
   updateInvoice(id: string, request: any): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/${id}`, request);
+    return this.apiService.put<any>(`/invoices/${id}`, request);
   }
 
-  // Get invoice by ID
+  // Get invoice by ID (company-aware)
   getInvoiceById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/${id}`);
+    return this.apiService.get<any>(`/invoices/${id}`);
   }
 
-  // Get invoice by number
+  // Get invoice by number (company-aware)
   getInvoiceByNumber(invoiceNumber: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/number/${invoiceNumber}`);
+    const params = new HttpParams().set('invoiceNumber', invoiceNumber);
+    return this.apiService.get<any>('/invoices/by-number', params);
   }
 
-  // Get all invoices with pagination
+  // Get all invoices with pagination (company-aware)
   getAllInvoices(page: number = 0, size: number = 20, sortBy: string = 'invoiceDate', sortDirection: string = 'DESC'): Observable<any> {
     const params = new HttpParams()
       .set('page', page.toString())
@@ -39,85 +44,58 @@ export class InvoiceService {
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
 
-    return this.http.get<any>(this.baseUrl, { params });
+    return this.apiService.get<any>('/invoices', params);
   }
 
-  // Get invoices by company
-  getInvoicesByCompany(companyId: string, page: number = 0, size: number = 20): Observable<any> {
-    const params = new HttpParams()
-      .set('page', page.toString())
-      .set('size', size.toString());
-
-    return this.http.get<any>(`${this.baseUrl}/company/${companyId}`, { params });
-  }
-
-  // Get invoices by customer
+  // Get invoices by customer (company-aware)
   getInvoicesByCustomer(customerId: string, page: number = 0, size: number = 20): Observable<any> {
     const params = new HttpParams()
+      .set('customerId', customerId)
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<any>(`${this.baseUrl}/customer/${customerId}`, { params });
+    return this.apiService.get<any>('/invoices/by-customer', params);
   }
 
-  // Get invoices by date range
+  // Get invoices by date range (company-aware)
   getInvoicesByDateRange(startDate: string, endDate: string): Observable<any[]> {
     const params = new HttpParams()
       .set('startDate', startDate)
       .set('endDate', endDate);
 
-    return this.http.get<any[]>(`${this.baseUrl}/date-range`, { params });
+    return this.apiService.get<any[]>('/invoices/by-date-range', params);
   }
 
-  // Get invoices by company and date range
-  getInvoicesByCompanyAndDateRange(companyId: string, startDate: string, endDate: string): Observable<any[]> {
-    const params = new HttpParams()
-      .set('startDate', startDate)
-      .set('endDate', endDate);
-
-    return this.http.get<any[]>(`${this.baseUrl}/company/${companyId}/date-range`, { params });
-  }
-
-  // Get overdue invoices
+  // Get overdue invoices (company-aware)
   getOverdueInvoices(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/overdue`);
+    return this.apiService.get<any[]>('/invoices/overdue');
   }
 
-  // Get overdue invoices by company
-  getOverdueInvoicesByCompany(companyId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/company/${companyId}/overdue`);
-  }
-
-  // Get unpaid invoices
+  // Get unpaid invoices (company-aware)
   getUnpaidInvoices(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/unpaid`);
+    return this.apiService.get<any[]>('/invoices/unpaid');
   }
 
-  // Get unpaid invoices by company
-  getUnpaidInvoicesByCompany(companyId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/company/${companyId}/unpaid`);
-  }
-
-  // Cancel an invoice
+  // Cancel an invoice (company-aware)
   cancelInvoice(id: string, cancellationReason: string): Observable<any> {
-    const params = new HttpParams().set('cancellationReason', cancellationReason);
-    return this.http.put<any>(`${this.baseUrl}/${id}/cancel`, null, { params });
+    const data = { cancellationReason };
+    return this.apiService.put<any>(`/invoices/${id}/cancel`, data);
   }
 
-  // Approve an invoice
+  // Approve an invoice (company-aware)
   approveInvoice(id: string): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/${id}/approve`, null);
+    return this.apiService.put<any>(`/invoices/${id}/approve`, {});
   }
 
-  // Reject an invoice
+  // Reject an invoice (company-aware)
   rejectInvoice(id: string, rejectionReason: string): Observable<any> {
-    const params = new HttpParams().set('rejectionReason', rejectionReason);
-    return this.http.put<any>(`${this.baseUrl}/${id}/reject`, null, { params });
+    const data = { rejectionReason };
+    return this.apiService.put<any>(`/invoices/${id}/reject`, data);
   }
 
-  // Delete an invoice
+  // Delete an invoice (company-aware)
   deleteInvoice(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.apiService.delete<void>(`/invoices/${id}`);
   }
 
   // Get invoice count by company and date range

@@ -1,0 +1,45 @@
+<nav class="navbar" *ngIf="isAuthenticated">
+  <div class="navbar-container">
+    <div class="navbar-left">
+      <div class="navbar-brand">
+        <i class="fa fa-calculator"></i>
+        <span class="brand-text">Advanced Accounting</span>
+      </div>
+
+      <button class="nav-toggle" (click)="toggleMenu()" aria-label="Toggle navigation">
+        <i class="fa" [ngClass]="{ 'fa-bars': !menuOpen, 'fa-times': menuOpen }"></i>
+      </button>
+    </div>
+
+    <div class="navbar-center" [class.open]="menuOpen">
+      <ul class="nav-list">
+        <li><a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a></li>
+        <li><a routerLink="/invoices" routerLinkActive="active" class="nav-link">Invoices</a></li>
+        <li><a routerLink="/customers" routerLinkActive="active" class="nav-link">Customers</a></li>
+        <li><a routerLink="/products" routerLinkActive="active" class="nav-link">Products</a></li>
+      </ul>
+    </div>
+
+    <div class="navbar-right">
+      <div class="company-info" *ngIf="selectedCompany">
+        <div class="company-details">
+          <i class="fa fa-building"></i>
+          <span class="company-name">{{ selectedCompany.companyName }}</span>
+          <button class="btn-change-company" (click)="changeCompany()" title="Change Company">
+            <i class="fa fa-exchange"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="user-menu">
+        <div class="user-info">
+          <i class="fa fa-user-circle"></i>
+          <span class="user-name">{{ user?.firstName }} {{ user?.lastName }}</span>
+        </div>
+        <button class="btn-logout" (click)="logout()" title="Logout">
+          <i class="fa fa-sign-out"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
